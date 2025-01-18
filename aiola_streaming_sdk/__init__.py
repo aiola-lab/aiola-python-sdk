@@ -1,5 +1,5 @@
 from .client import AiolaStreamingClient
-from .config import StreamingConfig
+from .models.config import StreamingConfig
 from .exceptions import AiolaStreamingError, ConnectionError, AuthenticationError
 
 __version__ = "0.1.0"

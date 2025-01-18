@@ -16,6 +16,8 @@ class StreamingConfig(BaseModel):
     time_zone: str = Field(default="UTC")
     namespace: str = Field(default="/events")
     transports: List[str] = Field(default=["polling"])
+
+    use_buildin_mic: bool=Field(default=False)
     
     # Nested configurations
     audio: AudioConfig = Field(default_factory=AudioConfig)

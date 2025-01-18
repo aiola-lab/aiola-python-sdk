@@ -1,23 +1,34 @@
 import asyncio
 import signal
-from aiola_streaming_sdk import AiolaStreamingClient, StreamingConfig
+import json
+from threading import Event
+from aiola_streaming_sdk.client import AiolaStreamingClient
+from aiola_streaming_sdk.models.config import StreamingConfig
+from recorder_app import RecorderApp
 
 def on_connect():
-    print(f"Connection established")
+    print("Connection established")
 
-def on_disconnect():
-    print(f"Connection closed")
+def on_disconnect(duration, total_audio):
+    print(f"Connection closed. Duration: {duration}ms, Total audio: {total_audio}ms")
 
 def on_transcript(data):
     print(f"Transcript received: {data.get('transcript')}")
 
 def on_events(data):
-    print(f"Events received: {data}")
+    print(f"Events received: {json.dumps(data, indent=2)}")
 
 def on_error(data):
-    print(f"Error occurred: {data}")
+    print("Error occurred:", data)
+
+def on_stream_error(data):
+    print("Stream Error received:", data)
+
+# Create an event to keep the application running
+exit_event = Event()
 
 async def main():
+    # Define the SDK configurations
     config = StreamingConfig(
         endpoint="https://shahar.internal.aiola.ai",
         auth_type="x-api-key",
@@ -26,7 +37,9 @@ async def main():
         namespace= "/events",
         transports=['polling'],
         execution_id="1",
-        use_buildin_mic=True,
+        use_buildin_mic = False,
+        lang_code="en_US",
+        time_zone="UTC",
         callbacks=dict(
             on_transcript=on_transcript,
             on_error=on_error,
@@ -36,9 +49,16 @@ async def main():
         )
     )
 
+    # Create SDK client
     client = AiolaStreamingClient(config)
-    
+
     await client.start_streaming()
+
+    # Define a recording application
+    recorder_app = RecorderApp(client, on_stream_error)
+
+    # Start the recorder asynchronously
+    recorder_app.start_streaming()
 
     print("Application is running. Press Ctrl+C to exit.")
 
@@ -46,6 +66,8 @@ async def main():
     loop = asyncio.get_event_loop()
 
     def signal_handler():
+        print("\nStopping recording")
+        recorder_app.close_audio_streaming()
         print("Closing real-time transcript connection")
         loop.stop()
 

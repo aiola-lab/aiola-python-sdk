@@ -10,8 +10,8 @@ from urllib.parse import urlencode
 
 from .models.config import StreamingConfig
 from .models.stats import StreamingStats
-from .exceptions import AiolaStreamingError
 from .services.auth import get_auth_headers
+
 
 class AiolaStreamingClient:
     """
@@ -131,15 +131,12 @@ class AiolaStreamingClient:
         ):
             self.sio.wait()
 
-    def start_streaming(self, silent: bool = False) -> None:
+    async def start_streaming(self, silent: bool = False) -> None:
         """
-        Start streaming audio to the server.
-        
+        Start streaming audio to the server asynchronously.
+
         Args:
-            silent (bool): If True, don't stream audio from microphone
-        
-        Raises:
-            AiolaStreamingError: If streaming fails
+            silent (bool): If True, don't stream audio from the microphone
         """
         try:
             # Get authentication headers
@@ -157,20 +154,20 @@ class AiolaStreamingClient:
                 url=url,
                 transports=self.config.transports,
                 headers=auth_headers.headers,
-                socketio_path = '/api/voice-streaming/socket.io'
-
+                socketio_path='/api/voice-streaming/socket.io'
             )
 
             # Start streaming or wait
-            if not silent:
-                self._start_audio_streaming()
-            else:
-                self.sio.wait()
+            if self.config.use_buildin_mic:
+                if not silent:
+                    self._start_audio_streaming()
+                else:
+                    self.sio.wait()
 
         except Exception as e:
-            raise AiolaStreamingError(str(e))
-        finally:
-            self.disconnect()
+            print(f"Streaming error: {e}")
+            await self.sio.disconnect()
+
 
     def disconnect(self) -> None:
         """Disconnect from the streaming server."""
