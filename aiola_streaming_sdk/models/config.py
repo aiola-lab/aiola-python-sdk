@@ -15,7 +15,7 @@ class StreamingConfig(BaseModel):
     lang_code: str = Field(default="en_US")
     time_zone: str = Field(default="UTC")
     namespace: str = Field(default="/events")
-    transports: List[str] = Field(default=["polling"])
+    transports: str = Field(default="polling")
 
     use_buildin_mic: bool=Field(default=False)
     

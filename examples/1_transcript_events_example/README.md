@@ -90,11 +90,11 @@ async def main():
     # 
     config = StreamingConfig(
         endpoint=`<endpoint>`,    # The URL of the Aiola server
-        auth_type="x-api-key",    # Supported authentication for the API
-        auth_credentials={"api_key": `<your_api_key_here>`}, # API key, obtained upon registration with Aiola },
+        auth_type="Bearer",    # Supported authentication for the API
+        auth_credentials={"token": `<your_bearer_token_here>`}, # The Bearer token, obtained upon registration with Aiola },
         flow_id=`<flow_id_here>`, # One of the IDs from the flows created for the user
         namespace= "/events",     # Namespace for subscription: /transcript (for transcription) or /events (for transcription + LLM solution)
-        transports=['polling'],   # Communication method: ['websocket'] for L4 or ['polling'] for L7
+        transports='polling',   # Communication method: 'websocket' for L4 or 'polling' for L7
         execution_id="1",         # Unique identifier to trace execution
         use_buildin_mic=True,     # Indicate to use the SDK mic
         callbacks=dict(
@@ -143,8 +143,8 @@ async def main():
     # 
     config = StreamingConfig(
         endpoint=`<endpoint>`,    # The URL of the Aiola server
-        auth_type="x-api-key",    # Supported authentication for the API
-        auth_credentials={"api_key": `<your_api_key_here>`}, # API key, obtained upon registration with Aiola },
+        auth_type="Bearer",    # Supported authentication for the API
+        auth_credentials={"token": `<your_bearer_token_here>`}, # The Bearer token, obtained upon registration with Aiola },
         flow_id=`<flow_id_here>`, # One of the IDs from the flows created for the user
         namespace= "/events",     # Namespace for subscription: /transcript (for transcription) or /events (for transcription + LLM solution)
         transports=['polling'],   # Communication method: ['websocket'] for L4 or ['polling'] for L7
@@ -180,9 +180,9 @@ async def main():
 | Parameter	                  | Type	     | Description                                                                                                                          |
 |-----------------------------|--------------|--------------------------------------------------------------------------------------------------------------------------------------|
 | `endpoint`	              | `string`     | The base URL of the Aiola server                                                                                                     |
-| `authType`	              | `string`     | The authentication type, currently supporting "x-api-key".                                                                           |
+| `authType`	              | `string`     | The authentication type, currently supporting "Bearer".                                                                           |
 | `authCredentials` 	      | `object`     | An object containing credentials required for authentication.                                                                        |
-| `authCredentials.api_key`   |	`string`     | The API key, obtained during registration with Aiola.                                                                                |
+| `authCredentials.token`   |	`string`     | The Bearer token, obtained during registration with Aiola.                                                                                |
 | `flowId`	                  |	`string`     | A unique identifier for the specific flow created for the user.                                                                      |
 | `namespace`	              |	`string`     | The namespace to subscribe to. Use /transcript for transcription or /events for transcription + LLM integration.                     |
 | `transports`	              |	`string[]`   | The communication method. Use ['websocket'] for Layer 4 (faster, low-level) or ['polling'] for Layer 7 (supports HTTP2, WAF, etc.).  |
@@ -211,7 +211,7 @@ async def main():
 1.	Endpoint:
     -	This is the base URL of the Aiola server where the client will connect.
 2.	Authentication:
-    -	The SDK uses x-api-key for authentication. The API key must be obtained during registration with Aiola.
+    -	The SDK uses Bearer for authentication. The Bearer token must be obtained during registration with Aiola.
 3.	Namespace:
     -	Determines the type of data you want to subscribe to:
     -	`/transcript`: For transcription data only.
