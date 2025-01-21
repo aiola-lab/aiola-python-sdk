@@ -62,85 +62,48 @@ The `recorder_app` uses a configurable schema defined as follows:
 
 # Example Application: Using the SDK and RecorderApp
 
-## Example 1: Built-in Microphone Streaming
-This example demonstrates how to stream audio from the **built-in microphone** to the Aiola service. The application connects to the Aiola API, streams audio data, and receives real-time transcripts and events.
+## External Microphone Streaming with Keyword Spotting:
+This example demonstrates how to stream audio from an **external microphone** and leverage **keyword spotting**. The configuration may require selecting a specific audio device depending on the system setup.
 
 ```python
 import asyncio
 import signal
+import json
+from threading import Event
 from aiola_streaming_sdk import AiolaStreamingClient, StreamingConfig
 
-def on_connect():
-    print(f"Connection established")
+def on_connect(client, namespace):
+    print("Connection established")
 
-def on_disconnect():
-    print(f"Connection closed")
+    kws_list = ["aiola", "ngnix"]
+    binary_data = json.dumps(kws_list).encode('utf-8')
+    print(f'kws_list: {kws_list}')
+
+    client.sio.emit("set_keywords", binary_data, namespace=namespace)
+
+def on_disconnect(duration, total_audio):
+    print(f"Connection closed. Duration: {duration}ms, Total audio: {total_audio}ms")
 
 def on_transcript(data):
     print(f"Transcript received: {data.get('transcript')}")
 
 def on_events(data):
-    print(f"Events received: {data}")
+    print(f"Events received: {json.dumps(data, indent=2)}")
 
 def on_error(data):
-    print(f"Error occurred: {data}")
+    print("Error occurred:", data)
+
+def on_stream_error(data):
+    print("Stream Error received:", data)
+
+# Create an event to keep the application running
+exit_event = Event()
 
 async def main():
+    # Define the SDK configurations
+    bearer_token = 'BdGVzbGFpbGFubXVzawodGVzbGFpbGFubXVzawo=pbGFubXVz'
+    namespace= "/events"
 
-    # 
-    config = StreamingConfig(
-        endpoint=`<endpoint>`,    # The URL of the Aiola server
-        auth_type="Bearer",    # Supported authentication for the API
-        auth_credentials={"token": `<your_bearer_token_here>`}, # The Bearer token, obtained upon registration with Aiola },
-        flow_id=`<flow_id_here>`, # One of the IDs from the flows created for the user
-        namespace= "/events",     # Namespace for subscription: /transcript (for transcription) or /events (for transcription + LLM solution)
-        transports='polling',   # Communication method: 'websocket' for L4 or 'polling' for L7
-        execution_id="1",         # Unique identifier to trace execution
-        use_buildin_mic=True,     # Indicate to use the SDK mic
-        callbacks=dict(
-            on_transcript=on_transcript, # Callback for transcript data
-            on_error=on_error,           # Callback for handling errors
-            on_events=on_events,         # Callback for event-related data
-            on_connect=on_connect,       # Callback for connection establishment
-            on_disconnect=on_disconnect  # Callback for connection termination
-        )
-    )
-
-    # Create a SDK client
-    client = AiolaStreamingClient(config)
-    
-    # Start the SDK streaming
-    await client.start_streaming()
-
-    ...
-```
-
-## Example 2: External Microphone Streaming
-This example demonstrates how to stream audio from an **external microphone**. The configuration may require selecting a specific audio device depending on the system setup.
-
-```python
-import asyncio
-import signal
-from aiola_streaming_sdk import AiolaStreamingClient, StreamingConfig
-
-def on_connect():
-    print(f"Connection established")
-
-def on_disconnect():
-    print(f"Connection closed")
-
-def on_transcript(data):
-    print(f"Transcript received: {data.get('transcript')}")
-
-def on_events(data):
-    print(f"Events received: {data}")
-
-def on_error(data):
-    print(f"Error occurred: {data}")
-
-async def main():
-
-    # 
     config = StreamingConfig(
         endpoint=`<endpoint>`,    # The URL of the Aiola server
         auth_type="Bearer",    # Supported authentication for the API
@@ -149,12 +112,14 @@ async def main():
         namespace= "/events",     # Namespace for subscription: /transcript (for transcription) or /events (for transcription + LLM solution)
         transports='polling',   # Communication method: ['websocket'] for L4 or ['polling'] for L7
         execution_id="1",         # Unique identifier to trace execution
-        use_buildin_mic=True,     # Indicate to use the SDK mic
+        use_buildin_mic=False,     # Indicate to use the SDK mic
+        lang_code="en_US",
+        time_zone="UTC",
         callbacks=dict(
             on_transcript=on_transcript, # Callback for transcript data
             on_error=on_error,           # Callback for handling errors
             on_events=on_events,         # Callback for event-related data
-            on_connect=on_connect,       # Callback for connection establishment
+            on_connect=lambda: on_connect(client, namespace),       # Callback for connection establishment
             on_disconnect=on_disconnect  # Callback for connection termination
         )
     )
@@ -191,6 +156,23 @@ async def main():
 | `langCode`	              |	`string`	 | The language code for transcription. For example, "en_US" for US English.                                                            |
 | `timeZone`	              |	`string`	 | The time zone for aligning timestamps. Use "UTC" or any valid IANA time zone identifier.                                             |
 | `callbacks`	              |	`object`	 | An object containing the event handlers (callbacks) for managing real-time data and connection states                                |
+
+<br>
+
+### Keyword Spotting
+
+This example introduces Keyword Spotting functionality:
+-	**How It Works**:
+    1.	During the on_connect event, keywords are set dynamically using client.sio.emit("set_keywords", ...). The connection must be open
+    2.	These keywords trigger real-time detection when encountered in the streamed audio.
+-	**Setting Keywords**:
+
+    ```python
+    kws_list = ["aiola", "ngnix"]
+    binary_data = json.dumps(kws_list).encode('utf-8')
+    client.sio.emit("set_keywords", binary_data, namespace=namespace)
+    ```
+---
 
 <br>
 
