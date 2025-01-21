@@ -19,15 +19,15 @@ def on_error(data):
 
 async def main():
 
-    bearer_token = 'BdGVzbGFpbGFubXVzawodGVzbGFpbGFubXVzawo=pbGFubXVz'
+    bearer_token = '< your-bearer-token >'
     config = StreamingConfig(
-        endpoint="https://tesla.internal.aiola.ai",
+        endpoint="< your-api-base-url >",
         auth_type="Bearer",
         auth_credentials={"token": bearer_token},
-        flow_id="f38d5001-3b42-405f-b4e3-6caddce456c3",
+        flow_id="<your-flow-id>",
         namespace= "/events",
         transports='websocket',
-        execution_id="13455",
+        execution_id="<your-execution-id>",
         use_buildin_mic=True,
         callbacks=dict(
             on_transcript=on_transcript,

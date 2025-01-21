@@ -29,15 +29,15 @@ exit_event = Event()
 
 async def main():
     # Define the SDK configurations
-    bearer_token = 'BdGVzbGFpbGFubXVzawodGVzbGFpbGFubXVzawo=pbGFubXVz'
+    bearer_token = '< your-bearer-token >'
     config = StreamingConfig(
-        endpoint="https://tesla.internal.aiola.ai",
+        endpoint="< your-api-base-url >",
         auth_type="Bearer",
         auth_credentials={"token": bearer_token},
-        flow_id="f38d5001-3b42-405f-b4e3-6caddce456c3",
+        flow_id="<your-flow-id>",
         namespace= "/events",
         transports='polling',
-        execution_id="19990",
+        execution_id="<your-execution-id>",
         use_buildin_mic = False,
         lang_code="en_US",
         time_zone="UTC",
