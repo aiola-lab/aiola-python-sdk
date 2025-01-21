@@ -19,8 +19,41 @@
 To install the SDK, run the following command:
 
 ```bash
-npm install aiola-python-sdk
+pip install aiola-python-sdk
 ```
+
+or locally install the package from the root directory:
+
+create virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+activate virtual environment:
+
+```bash
+source .venv/bin/activate
+```
+
+install development dependencies:
+
+```bash
+pip install wheel build setuptools
+```
+
+Build the package:
+
+```bash
+python -m build
+```
+
+Install the package:
+
+```bash
+pip install -e .
+```
+
 ---
 
 ## Requirements
