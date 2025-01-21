@@ -52,3 +52,47 @@ This example shows how to stream text-to-speech in real-time, enabling audio pla
    cd aiola-python-sdk
    ```
 2.	Follow the instructions in the individual example directories for specific use cases.
+
+---
+
+## Installation
+
+To install the SDK, run the following command:
+
+```bash
+pip install aiola-python-sdk
+```
+
+or locally install the package from the root directory:
+
+create virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+activate virtual environment:
+
+```bash
+source .venv/bin/activate
+```
+
+install development dependencies:
+
+```bash
+pip install wheel build setuptools
+```
+
+Build the package:
+
+```bash
+python -m build
+```
+
+Install the package:
+
+```bash
+pip install -e .
+```
+
+---
