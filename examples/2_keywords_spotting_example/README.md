@@ -19,7 +19,7 @@
 To install the SDK, run the following command:
 
 ```bash
-npm install aiola-python-sdk
+pip install aiola-python-sdk
 ```
 
 or locally install the package from the root directory:
