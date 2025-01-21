@@ -23,6 +23,9 @@ This example shows how to set up keyword spotting using the aiOla Streaming SDK.
 - **Key Features**:
   - Spot predefined keywords in live streams.
   - Event-driven keyword matching.
+ 
+#### 3. Supported Languages 
+ en-EN, de-DE, fr-FR, zh-ZH, es-ES, pt-PT
 
 ---
 
