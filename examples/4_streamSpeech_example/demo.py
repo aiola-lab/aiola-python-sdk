@@ -7,7 +7,9 @@ def save_audio_file(audio_data: bytes, filename: str):
 
 def main():
     tts_url = "< your-api-base-url >/api/tts"   # Replace with your API base URL
-    tts_client = AiolaTTSClient(tts_url)
+    bearer_token = "<your-bearer-token>"  # Replace with your Bearer token
+
+    tts_client = AiolaTTSClient(base_url=tts_url, bearer_token=bearer_token)
 
     try:
         # Stream Speech Example
