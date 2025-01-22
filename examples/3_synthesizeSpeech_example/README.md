@@ -26,7 +26,7 @@ This example demonstrates how to use the aiOla TTS SDK to convert text into spee
 1.	Clone the repository and navigate to the example directory.
 2.	Update the baseUrl and ensure the API endpoint is correct:
    ```javascript
-   base_url = "https://tesla.internal.aiola.ai/api/tts" // Replace with your API base URL
+   tts_url = "<your-api-base-url>/api/tts" // Replace with your API base URL
    ```
 
 ## Usage
@@ -46,8 +46,8 @@ This example demonstrates how to use the aiOla TTS SDK to convert text into spee
 ```python
 from aiola_tts_sdk import AiolaTTSClient
 
-base_url = "https://tesla.internal.aiola.ai/api/tts"
-tts_client = AiolaTTSClient(base_url)
+tts_url = "<your-api-base-url>/api/tts"
+tts_client = AiolaTTSClient(tts_url)
 ```
 
 ### Synthesize Speech
