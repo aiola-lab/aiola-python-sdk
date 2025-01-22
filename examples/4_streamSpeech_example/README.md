@@ -27,6 +27,7 @@ This example demonstrates how to use the aiOla TTS SDK to convert text into spee
 2.	Update the baseUrl and ensure the API endpoint is correct:
    ```javascript
    tts_url = "<your-api-base-url>/api/tts" // Replace with your API base URL
+   bearer_token = "<your-bearer-token>"  // Replace with your Bearer token
    ```
 
 ## Usage
@@ -47,7 +48,8 @@ This example demonstrates how to use the aiOla TTS SDK to convert text into spee
 from aiola_tts_sdk import AiolaTTSClient
 
 tts_url = "<your-api-base-url>/api/tts"
-tts_client = AiolaTTSClient(tts_url)
+bearer_token = "<your-bearer-token>"
+tts_client = AiolaTTSClient(base_url=tts_url, bearer_token=bearer_token)
 ```
 
 ### Stream Speech
