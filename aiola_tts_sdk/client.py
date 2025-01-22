@@ -6,15 +6,20 @@ class AiolaTTSClient:
     A client for interacting with the aiOla Text-to-Speech API.
     """
 
-    def __init__(self, base_url: str):
+    def __init__(self, base_url: str, bearer_token: str):
         """
         Initializes the Aiola TTS Client.
         
         :param base_url: The base URL of the TTS API.
+        :param bearer_token: The Bearer token for authentication.
         """
         if not base_url:
             raise ValueError("The base_url parameter is required.")
+        if not bearer_token:
+            raise ValueError("The bearer_token parameter is required.")
+        
         self.base_url = base_url
+        self.bearer_token = bearer_token
 
     def _post_request(self, endpoint: str, payload: dict) -> Union[bytes, dict]:
         """
@@ -27,6 +32,7 @@ class AiolaTTSClient:
         url = f"{self.base_url}{endpoint}"
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": f"Bearer {self.bearer_token}"
         }
 
         response = requests.post(url, data=payload, headers=headers)
