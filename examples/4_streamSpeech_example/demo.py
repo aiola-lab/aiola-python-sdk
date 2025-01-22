@@ -6,8 +6,8 @@ def save_audio_file(audio_data: bytes, filename: str):
     print(f"Audio saved as {filename}")
 
 def main():
-    base_url = "https://tesla.internal.aiola.ai/api/tts"   # Replace with your API base URL
-    tts_client = AiolaTTSClient(base_url)
+    tts_url = "< your-api-base-url >/tts"   # Replace with your API base URL
+    tts_client = AiolaTTSClient(tts_url)
 
     try:
 
