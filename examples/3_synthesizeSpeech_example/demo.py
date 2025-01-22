@@ -6,7 +6,7 @@ def save_audio_file(audio_data: bytes, filename: str):
     print(f"Audio saved as {filename}")
 
 def main():
-    tts_url = "< your-api-base-url >/tts"  # Replace with your API base URL
+    tts_url = "< your-api-base-url >/api/tts"  # Replace with your API base URL
     tts_client = AiolaTTSClient(tts_url)
 
     try:

@@ -134,7 +134,7 @@ exit_event = Event()
 
 async def main():
     # Define the SDK configurations
-    bearer_token = 'BdGVzbGFpbGFubXVzawodGVzbGFpbGFubXVzawo=pbGFubXVz'
+    bearer_token = '< your-bearer-token >'
     namespace= "/events"
 
     config = StreamingConfig(
