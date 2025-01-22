@@ -37,16 +37,18 @@ async def main():
     # Define the SDK configurations
     namespace= "/events"
     bearer_token = '< your-bearer-token >'
-    
+
     config = StreamingConfig(
         endpoint="< your-api-base-url >",
         auth_type="Bearer",
         auth_credentials={"token": bearer_token},
         flow_id="<your-flow-id>",
         namespace= "/events",
-        transports='websocket',
+        transports='polling',
         execution_id="<your-execution-id>",
-        use_buildin_mic=True,
+        use_buildin_mic=False,
+        lang_code="en_US",
+        time_zone="UTC",
         callbacks=dict(
             on_transcript=on_transcript,
             on_error=on_error,
