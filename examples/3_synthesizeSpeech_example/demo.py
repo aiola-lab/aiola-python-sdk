@@ -7,7 +7,10 @@ def save_audio_file(audio_data: bytes, filename: str):
 
 def main():
     tts_url = "< your-api-base-url >/tts"  # Replace with your API base URL
-    tts_client = AiolaTTSClient(tts_url)
+    bearer_token = "<your-bearer-token>"  # Replace with your Bearer token
+
+    # Pass the bearer token to the AiolaTTSClient constructor
+    tts_client = AiolaTTSClient(base_url=tts_url, bearer_token=bearer_token)
 
     try:
         # Synthesize Speech Example
