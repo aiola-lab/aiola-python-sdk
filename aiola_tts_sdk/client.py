@@ -1,25 +1,48 @@
+from typing import Literal, Union
+
 import requests
-from typing import Union
+
+from .audio_converter import AudioConverter, AudioFormat
+
+VOICE_OPTIONS = Literal[
+    "af_bella",
+    "af_nicole",
+    "af_sarah",
+    "af_sky",
+    "am_adam",
+    "am_michael",
+    "bf_emma",
+    "bf_isabella",
+    "bm_george",
+    "bm_lewis",
+]
+
 
 class AiolaTTSClient:
     """
     A client for interacting with the aiOla Text-to-Speech API.
     """
 
-    def __init__(self, base_url: str, bearer_token: str):
+    def __init__(
+        self, base_url: str, bearer_token: str, audio_format: AudioFormat = "LINEAR16"
+    ):
         """
         Initializes the Aiola TTS Client.
-        
+
         :param base_url: The base URL of the TTS API.
         :param bearer_token: The Bearer token for authentication.
+        :param audio_format: The desired audio format (LINEAR16 or PCM). Defaults to LINEAR16.
         """
         if not base_url:
             raise ValueError("The base_url parameter is required.")
         if not bearer_token:
             raise ValueError("The bearer_token parameter is required.")
-        
+        if audio_format not in ["LINEAR16", "PCM"]:
+            raise ValueError("audio_format must be one of: LINEAR16, PCM")
+
         self.base_url = base_url
         self.bearer_token = bearer_token
+        self.audio_converter = AudioConverter(audio_format)
 
     def _post_request(self, endpoint: str, payload: dict) -> Union[bytes, dict]:
         """
@@ -32,15 +55,16 @@ class AiolaTTSClient:
         url = f"{self.base_url}{endpoint}"
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
-            "Authorization": f"Bearer {self.bearer_token}"
+            "Authorization": f"Bearer {self.bearer_token}",
         }
 
         response = requests.post(url, data=payload, headers=headers)
 
         if response.status_code == 200:
             if "audio/wav" in response.headers.get("Content-Type", ""):
-                return response.content  # Audio data as bytes
-            return response.json()  # JSON response
+                converted = self.audio_converter.convert(response.content)
+                return converted
+            return response.json()
 
         # Handle errors
         try:
@@ -59,14 +83,14 @@ class AiolaTTSClient:
         """
         if not text:
             raise ValueError("The 'text' parameter is required.")
-        
+
         payload = {
             "text": text,
             "voice": voice,
         }
         return self._post_request("/synthesize", payload)
 
-    def synthesize_stream(self, text: str, voice: str = "af_bella") -> bytes:
+    def synthesize_stream(self, text: str, voice: VOICE_OPTIONS = "af_bella") -> bytes:
         """
         Streams text-to-speech audio data.
 
@@ -76,7 +100,7 @@ class AiolaTTSClient:
         """
         if not text:
             raise ValueError("The 'text' parameter is required.")
-        
+
         payload = {
             "text": text,
             "voice": voice,

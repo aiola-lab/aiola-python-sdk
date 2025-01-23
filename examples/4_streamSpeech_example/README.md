@@ -52,6 +52,18 @@ bearer_token = "<your-bearer-token>"
 tts_client = AiolaTTSClient(base_url=tts_url, bearer_token=bearer_token)
 ```
 
+### Audio Format Options
+
+The SDK supports multiple audio formats for the synthesized speech. You can specify the format when initializing the client:
+
+```python
+tts_client = AiolaTTSClient(base_url=tts_url, bearer_token=bearer_token, audio_format="LINEAR16")
+```
+
+Supported formats:
+- LINEAR16
+- PCM
+
 ### Stream Speech
 ```python
 stream_data = tts_client.synthesize_stream("Streaming aiOla speech", voice="af_bella")
