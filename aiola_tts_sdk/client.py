@@ -1,25 +1,31 @@
 import requests
 from typing import Union
+from .audio_converter import AudioFormat, AudioConverter
+
 
 class AiolaTTSClient:
     """
     A client for interacting with the aiOla Text-to-Speech API.
     """
 
-    def __init__(self, base_url: str, bearer_token: str):
+    def __init__(self, base_url: str, bearer_token: str, audio_format: AudioFormat = "LINEAR16"):
         """
         Initializes the Aiola TTS Client.
         
         :param base_url: The base URL of the TTS API.
         :param bearer_token: The Bearer token for authentication.
+        :param audio_format: The desired audio format (LINEAR16, MULAW, or PCM). Defaults to LINEAR16.
         """
         if not base_url:
             raise ValueError("The base_url parameter is required.")
         if not bearer_token:
             raise ValueError("The bearer_token parameter is required.")
+        if audio_format not in ["LINEAR16", "MULAW", "PCM"]:
+            raise ValueError("audio_format must be one of: LINEAR16, MULAW, PCM")
         
         self.base_url = base_url
         self.bearer_token = bearer_token
+        self.audio_converter = AudioConverter(audio_format)
 
     def _post_request(self, endpoint: str, payload: dict) -> Union[bytes, dict]:
         """
@@ -39,8 +45,9 @@ class AiolaTTSClient:
 
         if response.status_code == 200:
             if "audio/wav" in response.headers.get("Content-Type", ""):
-                return response.content  # Audio data as bytes
-            return response.json()  # JSON response
+                converted = self.audio_converter.convert(response.content)
+                return converted
+            return response.json()
 
         # Handle errors
         try:
