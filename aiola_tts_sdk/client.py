@@ -14,14 +14,14 @@ class AiolaTTSClient:
         
         :param base_url: The base URL of the TTS API.
         :param bearer_token: The Bearer token for authentication.
-        :param audio_format: The desired audio format (LINEAR16, MULAW, or PCM). Defaults to LINEAR16.
+        :param audio_format: The desired audio format (LINEAR16 or PCM). Defaults to LINEAR16.
         """
         if not base_url:
             raise ValueError("The base_url parameter is required.")
         if not bearer_token:
             raise ValueError("The bearer_token parameter is required.")
-        if audio_format not in ["LINEAR16", "MULAW", "PCM"]:
-            raise ValueError("audio_format must be one of: LINEAR16, MULAW, PCM")
+        if audio_format not in ["LINEAR16", "PCM"]:
+            raise ValueError("audio_format must be one of: LINEAR16, PCM")
         
         self.base_url = base_url
         self.bearer_token = bearer_token

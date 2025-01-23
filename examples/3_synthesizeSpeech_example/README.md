@@ -64,7 +64,6 @@ tts_client = AiolaTTSClient(base_url=tts_url, bearer_token=bearer_token, audio_f
 Supported formats:
 - LINEAR16
 - PCM
-- MULAW
 
 ### Synthesize Speech
 ```python
