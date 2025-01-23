@@ -1,7 +1,8 @@
 import requests
-from typing import Union
+from typing import Union, Literal
 from .audio_converter import AudioFormat, AudioConverter
 
+VOICE_OPTIONS = Literal['af_bella', 'af_nicole', 'af_sarah', 'af_sky', 'am_adam', 'am_michael', 'bf_emma', 'bf_isabella', 'bm_george', 'bm_lewis']
 
 class AiolaTTSClient:
     """
@@ -73,7 +74,7 @@ class AiolaTTSClient:
         }
         return self._post_request("/synthesize", payload)
 
-    def synthesize_stream(self, text: str, voice: str = "af_bella") -> bytes:
+    def synthesize_stream(self, text: str, voice: VOICE_OPTIONS = "af_bella") -> bytes:
         """
         Streams text-to-speech audio data.
 
