@@ -12,11 +12,33 @@ from .models.config import StreamingConfig
 from .models.stats import StreamingStats
 from .services.auth import get_auth_headers
 
+class CustomSocketIOClient(socketio.Client):
+    def __init__(self, custom_headers=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.custom_headers = custom_headers or {}
+
+    def connect(self, *args, **kwargs):
+        # Save a reference to the original method
+        original_send_request = self.eio._send_request
+
+        # Define a patched method that includes the custom headers
+        def custom_send_request(method, url, headers=None, body=None, timeout=None):
+            if headers is None:
+                headers = {}
+            headers.update(self.custom_headers)  # Inject custom headers
+            return original_send_request(method, url, headers=headers, body=body, timeout=timeout)
+
+        # Patch the method
+        self.eio._send_request = custom_send_request
+
+        # Call the original connect method
+        super().connect(*args, **kwargs)
+
 
 class AiolaStreamingClient:
     """
     Client for streaming audio and handling real-time transcription.
-    
+
     Attributes:
         config (StreamingConfig): Configuration for the streaming client
         sio (socketio.Client): Socket.IO client instance
@@ -30,14 +52,19 @@ class AiolaStreamingClient:
         Args:
             config (StreamingConfig): Configuration for the streaming client
         """
+
         self.config = config
-        self.sio = socketio.Client()
+        auth_headers = get_auth_headers(
+            auth_type=self.config.auth_type,
+            auth_credentials=self.config.auth_credentials
+        )
+        self.sio = CustomSocketIOClient(auth_headers.headers)
         self.stats = StreamingStats()
         self._setup_event_handlers()
 
     def _setup_event_handlers(self) -> None:
         """Set up Socket.IO event handlers for various events."""
-        
+
         @self.sio.event(namespace=self.config.namespace)
         def connect() -> None:
             """Handle connection event."""
@@ -51,7 +78,7 @@ class AiolaStreamingClient:
             if self.config.callbacks.on_disconnect:
                 connection_duration = time.time() - (self.stats.connection_start_time or 0)
                 self.config.callbacks.on_disconnect(
-                    connection_duration, 
+                    connection_duration,
                     self.stats.total_audio_sent_duration
                 )
 
@@ -59,7 +86,7 @@ class AiolaStreamingClient:
         def transcript(data: Dict, ack=None) -> None:
             """
             Handle transcript events.
-            
+
             Args:
                 data: Transcript data from the server
                 ack: Acknowledgment callback
@@ -73,7 +100,7 @@ class AiolaStreamingClient:
         def events(data: Dict, ack=None) -> None:
             """
             Handle general events.
-            
+
             Args:
                 data: Event data from the server
                 ack: Acknowledgment callback
@@ -87,7 +114,7 @@ class AiolaStreamingClient:
         def error(data: Dict) -> None:
             """
             Handle error events.
-            
+
             Args:
                 data: Error data from the server
             """
@@ -97,7 +124,7 @@ class AiolaStreamingClient:
     def _get_connection_params(self) -> Dict[str, str]:
         """
         Get connection parameters for the streaming URL.
-        
+
         Returns:
             Dict[str, str]: URL parameters
         """
@@ -110,15 +137,15 @@ class AiolaStreamingClient:
 
     def _start_audio_streaming(self) -> None:
         """Start streaming audio from the microphone."""
-        
+
         def audio_callback(data, frames, time, status):
             """Handle audio data from the microphone."""
             if not self.sio.connected:
                 return
-            
+
             if status and self.config.callbacks.on_error:
                 self.config.callbacks.on_error({"audio_status": status})
-            
+
             if data is not None:
                 self.sio.emit("binary_data", bytes(data), namespace=self.config.namespace)
 
@@ -144,13 +171,13 @@ class AiolaStreamingClient:
                 auth_type=self.config.auth_type,
                 auth_credentials=self.config.auth_credentials
             )
-            
+
             # Build connection URL
             params = self._get_connection_params()
             url = f"{str(self.config.endpoint)}{str(self.config.namespace)}/?{urlencode(params)}"
 
             _transports = ['polling'] if self.config.transports == 'polling' else ['polling', 'websocket'] if self.config.transports == 'websocket' else ['polling', 'websocket']
-            
+
             namespaces = [self.config.namespace]
             if self.config.namespace != '/':
                 namespaces.append('/')
@@ -179,4 +206,4 @@ class AiolaStreamingClient:
     def disconnect(self) -> None:
         """Disconnect from the streaming server."""
         if self.sio.connected:
-            self.sio.disconnect() 
+            self.sio.disconnect()
