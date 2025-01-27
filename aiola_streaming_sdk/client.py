@@ -177,18 +177,12 @@ class AiolaStreamingClient:
             url = f"{str(self.config.endpoint)}{str(self.config.namespace)}/?{urlencode(params)}"
 
             _transports = ['polling'] if self.config.transports == 'polling' else ['polling', 'websocket'] if self.config.transports == 'websocket' else ['polling', 'websocket']
-
-            namespaces = [self.config.namespace]
-            if self.config.namespace != '/':
-                namespaces.append('/')
-
             # Connect to the server
             self.sio.connect(
                 url=url,
                 transports=_transports,
                 headers=auth_headers.headers,
-                socketio_path='/api/voice-streaming/socket.io',
-                namespaces=namespaces
+                socketio_path='/api/voice-streaming/socket.io'
             )
 
             # Start streaming or wait
