@@ -3,6 +3,7 @@ AiolaStreamingClient - Main client for handling audio streaming and Socket.IO co
 """
 
 import socketio
+import json
 import time
 import sounddevice as sd
 from typing import Dict
@@ -11,6 +12,7 @@ from urllib.parse import urlencode
 from .models.config import StreamingConfig
 from .models.stats import StreamingStats
 from .services.auth import get_auth_headers
+
 
 class CustomSocketIOClient(socketio.Client):
     def __init__(self, custom_headers=None, *args, **kwargs):
@@ -26,7 +28,9 @@ class CustomSocketIOClient(socketio.Client):
             if headers is None:
                 headers = {}
             headers.update(self.custom_headers)  # Inject custom headers
-            return original_send_request(method, url, headers=headers, body=body, timeout=timeout)
+            return original_send_request(
+                method, url, headers=headers, body=body, timeout=timeout
+            )
 
         # Patch the method
         self.eio._send_request = custom_send_request
@@ -54,11 +58,7 @@ class AiolaStreamingClient:
         """
 
         self.config = config
-        auth_headers = get_auth_headers(
-            auth_type=self.config.auth_type,
-            auth_credentials=self.config.auth_credentials
-        )
-        self.sio = CustomSocketIOClient(auth_headers.headers)
+        self.sio = socketio.Client()
         self.stats = StreamingStats()
         self._setup_event_handlers()
 
@@ -76,10 +76,11 @@ class AiolaStreamingClient:
         def disconnect() -> None:
             """Handle disconnection event."""
             if self.config.callbacks.on_disconnect:
-                connection_duration = time.time() - (self.stats.connection_start_time or 0)
+                connection_duration = time.time() - (
+                    self.stats.connection_start_time or 0
+                )
                 self.config.callbacks.on_disconnect(
-                    connection_duration,
-                    self.stats.total_audio_sent_duration
+                    connection_duration, self.stats.total_audio_sent_duration
                 )
 
         @self.sio.event(namespace=self.config.namespace)
@@ -129,10 +130,11 @@ class AiolaStreamingClient:
             Dict[str, str]: URL parameters
         """
         return {
-            'flow_id': self.config.flow_id,
-            'execution_id': self.config.execution_id,
-            'lang_code': self.config.lang_code,
-            'time_zone': self.config.time_zone
+            "flow_id": self.config.flow_id,
+            "execution_id": self.config.execution_id,
+            "lang_code": self.config.lang_code,
+            "time_zone": self.config.time_zone,
+            "vad_config": json.dumps(self.config.vad_config),
         }
 
     def _start_audio_streaming(self) -> None:
@@ -147,7 +149,9 @@ class AiolaStreamingClient:
                 self.config.callbacks.on_error({"audio_status": status})
 
             if data is not None:
-                self.sio.emit("binary_data", bytes(data), namespace=self.config.namespace)
+                self.sio.emit(
+                    "binary_data", bytes(data), namespace=self.config.namespace
+                )
 
         with sd.RawInputStream(
             samplerate=self.config.audio.sample_rate,
@@ -169,20 +173,28 @@ class AiolaStreamingClient:
             # Get authentication headers
             auth_headers = get_auth_headers(
                 auth_type=self.config.auth_type,
-                auth_credentials=self.config.auth_credentials
+                auth_credentials=self.config.auth_credentials,
             )
 
             # Build connection URL
             params = self._get_connection_params()
             url = f"{str(self.config.endpoint)}{str(self.config.namespace)}/?{urlencode(params)}"
 
-            _transports = ['polling'] if self.config.transports == 'polling' else ['polling', 'websocket'] if self.config.transports == 'websocket' else ['polling', 'websocket']
+            _transports = (
+                ["polling"]
+                if self.config.transports == "polling"
+                else (
+                    ["polling", "websocket"]
+                    if self.config.transports == "websocket"
+                    else ["polling", "websocket"]
+                )
+            )
             # Connect to the server
             self.sio.connect(
                 url=url,
                 transports=_transports,
                 headers=auth_headers.headers,
-                socketio_path='/api/voice-streaming/socket.io'
+                socketio_path="/api/voice-streaming/socket.io",
             )
 
             # Start streaming or wait
@@ -195,7 +207,6 @@ class AiolaStreamingClient:
         except Exception as e:
             print(f"Streaming error: {e}")
             await self.sio.disconnect()
-
 
     def disconnect(self) -> None:
         """Disconnect from the streaming server."""
