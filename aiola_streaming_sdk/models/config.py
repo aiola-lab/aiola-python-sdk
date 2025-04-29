@@ -20,7 +20,7 @@ class StreamingConfig(BaseModel):
     lang_code: str = Field(default="en_US")
     time_zone: str = Field(default="UTC")
     namespace: str = Field(default="/events")
-    transports: str = Field(default="polling")
+    transports: str = Field(default="websocket")
 
     use_buildin_mic: bool = Field(default=False)
     vad_config: Dict[str, Any] = Field(default_factory=dict)
