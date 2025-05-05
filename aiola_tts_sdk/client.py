@@ -54,11 +54,11 @@ class AiolaTTSClient:
         """
         url = f"{self.base_url}{endpoint}"
         headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Type": "application/json",
             "Authorization": f"Bearer {self.bearer_token}",
         }
 
-        response = requests.post(url, data=payload, headers=headers)
+        response = requests.post(url, json=payload, headers=headers)
 
         if response.status_code == 200:
             if "audio/wav" in response.headers.get("Content-Type", ""):
