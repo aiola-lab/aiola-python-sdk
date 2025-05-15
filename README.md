@@ -2,6 +2,14 @@
 
 Welcome to the **aiOla Python SDKs** repository. This repository contains Python SDKs for integrating with aiOla's Text-to-Speech (TTS) and Speech-to-Text (STT) services.
 
+## TL;DR - Demo
+
+Want to try out the playground? Just clone and run:
+```./build_and_play.sh ```
+
+https://github.com/user-attachments/assets/6dbbb71d-9f70-46bb-8395-506d3d05abba
+
+
 ## Table of Contents
 
 - [Text-to-Speech (TTS) SDK](#text-to-speech-tts-sdk)
