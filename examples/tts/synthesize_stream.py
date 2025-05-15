@@ -10,7 +10,7 @@ def save_audio_file(audio_data: bytes, filename: str):
     print(f"Audio saved as {completed_file}")
 
 def main():
-    # Playground token - Limited usage!
+   # Playground token - Limited usage!
     bearer_token = "qLDczk3BESZt2vcU1Tqqb1sSJ9DjsKYGygKdRPhLSg0p"
     tts_client = AiolaTtsClient(bearer_token=bearer_token)
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiola_tts"
-version = "0.1.2"
+version = "1.0.0"
 description = "Aiola Text-To-Speech Python SDK"
 authors = [
     { name = "Gilad O.", email = "gilad.or@aiola.com" },

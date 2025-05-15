@@ -110,5 +110,7 @@ progress_bar $STEP $TOTAL_STEPS
 
 # Print summary
 printf "\n${GREEN}===== aiOla sdk is ready for playing, enjoy! =====${NC}\n"
-printf "${GREEN}Hey, try running 'python examples/stt/deafult_audio_stream_auto_record.py' to get started!${NC}\n"
+printf "${GREEN}Hey, try running STT example 'python examples/stt/default_audio_stream_auto_record.py' to get started!${NC}\n"
+printf "${GREEN}Hey, try running TTS example 'python examples/tts/synthesize.py' to get started!${NC}\n"
+
 

@@ -84,11 +84,11 @@ class AiolaTtsClient:
         """
         url = f"{self.base_url}/api/tts{endpoint}"
         headers = {
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Type": "application/json",
             "Authorization": f"Bearer {self.bearer_token}",
         }
 
-        response = requests.post(url, data=payload, headers=headers, timeout=30)
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
         if response.status_code == 200:
             if "audio/wav" in response.headers.get("Content-Type", ""):
                 converted = self.audio_converter.convert(response.content)
