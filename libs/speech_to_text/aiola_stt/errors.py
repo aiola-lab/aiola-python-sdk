@@ -15,6 +15,7 @@ class AiolaErrorCode(str, Enum):
     MIC_ALREADY_IN_USE = "MIC_ALREADY_IN_USE"
     STREAMING_ERROR = "STREAMING_ERROR"
     GENERAL_ERROR = "GENERAL_ERROR"
+    FILE_TRANSCRIPTION_ERROR = "FILE_TRANSCRIPTION_ERROR"
     
 class AiolaError(Exception):
     """Custom error class for aiOla SDK"""

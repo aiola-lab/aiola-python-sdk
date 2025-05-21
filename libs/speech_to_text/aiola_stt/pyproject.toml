@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiola_stt"
-version = "0.1.4"
+version = "0.1.6"
 description = "Aiola Speech-To-Text Python SDK"
 authors = [
     { name = "Gilad O.", email = "gilad.or@aiola.com" },
@@ -21,23 +21,30 @@ dependencies = [
     "requests>=2.31.0",
     "numpy>=1.24.0",
     "aiohttp>=3.8.0",
+    "aiofiles>=23.2.1",
+    "av>=10.0.0",
+    "soundfile>=0.12.1",
+    "scipy>=1.10.0"
 ]
 requires-python = ">=3.8"
 readme = "README.md"
 license = "MIT"
 
-[project.urls]
-Homepage = "https://aiola.ai/"
-Repository = "https://github.com/aiola-lab/aiola-python-sdk.git"
-
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.23.0",
+    "pytest-xdist>=3.0.0",
+    "pytest-forked>=1.4.0",
+    "pytest-cov>=4.0.0",
     "black>=23.0.0",
     "flake8>=6.0.0",
-    "mypy>=1.0.0"
+    "mypy>=1.0.0",
 ]
+
+[project.urls]
+Homepage = "https://aiola.ai/"
+Repository = "https://github.com/aiola-lab/aiola-python-sdk.git"
 
 [tool.setuptools]
 packages = ["aiola_stt"]

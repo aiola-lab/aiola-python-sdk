@@ -5,17 +5,29 @@ AiolaStreamingClient - Main client for handling audio streaming and Socket.IO co
 import asyncio
 import json
 import logging
+import os
 from typing import Dict, List, Optional, AsyncGenerator
 from urllib.parse import urlencode
+import tempfile
+import wave
+import aiofiles
+import av  # For mp4 extraction
+from datetime import datetime, timezone
+from av.audio.resampler import AudioResampler
 
 import numpy as np
 import sounddevice as sd
+import soundfile as sf
+from scipy.signal import resample_poly
+import io
+import time as pytime
 
 from .config import AiolaConfig
 from .errors import AiolaError, AiolaErrorCode  
 
 # Constants
 AUDIO_CHUNK_SIZE = 8192  # Maximum size of audio chunks in bytes
+REQUIRED_SAMPLE_RATE = 16000  # Required sample rate in Hz for audio processing
 
 # Set up logging
 logging.basicConfig(
@@ -24,6 +36,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger("aiola_streaming_sdk")
+logger.setLevel('INFO')
 
 class AiolaSttClient:
     """
@@ -87,14 +100,14 @@ class AiolaSttClient:
                 **self.config.query_params.model_dump(),
             }
             if self.config.vad_config is not None:
-                print("VAD config is set")
+                logger.debug("VAD config is set")
                 params["vad_config"] = json.dumps({
                     "vad_threshold": self.config.vad_config.vad_threshold,
                     "min_silence_duration_ms": self.config.vad_config.min_silence_duration_ms
                 })
             else:
                 print("VAD config is not set")
-            print("Connection parameters:", params)
+            logger.debug("Connection parameters: %s", params)
 
             # Encode parameters into URL
             url = f"{base_url}/?{urlencode(params)}"
@@ -234,6 +247,128 @@ class AiolaSttClient:
             self.recording_in_progress = False
             self.is_stopping_recording = False
 
+    async def transcribe_file(self, file_path: str, output_transcript_file_path: str) -> None:
+        """
+        Transcribe an audio file (wav, mp3, mp4). Extracts audio if mp4, checks sample rate, mono, and size, streams in 4096 byte chunks, buffers transcript, writes to file, and calls on_file_transcript.
+        """
+        logger.debug("<><><><>Starting transcription for file: %s", file_path)
+
+        SUPPORTED_FORMATS = ("wav", "mp3", "mp4")
+        MAX_SIZE_MB = 50
+        CHUNK_SIZE = 4096
+        transcript_buffer = []
+        file_ext = os.path.splitext(file_path)[1][1:].lower()
+        logger.debug("Starting transcription for file: %s (type: %s)", file_path, file_ext)
+        if file_ext not in SUPPORTED_FORMATS:
+            logger.error("Unsupported file format: %s", file_ext)
+            self._handle_error(
+                f"Unsupported file format: {file_ext}",
+                AiolaErrorCode.FILE_TRANSCRIPTION_ERROR,
+                {"file_path": file_path}
+            )
+            return
+        size_mb = os.path.getsize(file_path) / (1024 * 1024)
+        logger.debug("Audio file size before conversion: %.2fMB", size_mb)
+
+        # Convert to wav and downsample if needed
+        temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+        try:
+            audio_path = self._convert_to_wav(file_path, temp_audio.name, REQUIRED_SAMPLE_RATE)
+        except Exception as e:
+            self._handle_error(
+                f"Failed to convert audio to wav: {str(e)}",
+                AiolaErrorCode.FILE_TRANSCRIPTION_ERROR,
+                {"file_path": file_path, "original_error": str(e)}
+            )
+            os.unlink(temp_audio.name)
+            return
+        # Check file size
+        size_mb = os.path.getsize(audio_path) / (1024 * 1024)
+        logger.debug("Audio file size after conversion: %.2fMB", size_mb)
+        if size_mb > MAX_SIZE_MB:
+            self._handle_error(
+                f"File size {size_mb:.2f}MB exceeds {MAX_SIZE_MB}MB limit.",
+                AiolaErrorCode.FILE_TRANSCRIPTION_ERROR,
+                {"file_path": file_path, "size_mb": size_mb}
+            )
+            os.unlink(temp_audio.name)
+            return
+        # Open audio and read data
+        try:
+            with wave.open(audio_path, "rb") as wf:
+                wf.rewind()
+                audio_data = wf.readframes(wf.getnframes())
+        except Exception as e:
+            self._handle_error(
+                f"Failed to read audio file: {str(e)}",
+                AiolaErrorCode.FILE_TRANSCRIPTION_ERROR,
+                {"file_path": file_path, "original_error": str(e)}
+            )
+            os.unlink(temp_audio.name)
+            return
+        # Prepare transcript buffer and override on_transcript
+        last_transcript_time = pytime.time()
+        transcript_event = asyncio.Event()
+        
+        async def wait_for_final_transcript():
+            nonlocal last_transcript_time
+            while True:
+                await asyncio.sleep(1)
+                if pytime.time() - last_transcript_time >= 5:
+                    break
+            # Write transcript to file here!
+            logger.debug("Writing transcript to %s", output_transcript_file_path)
+            try:
+                os.makedirs(os.path.dirname(output_transcript_file_path), exist_ok=True)
+                async with aiofiles.open(output_transcript_file_path, "w") as f:
+                    full_transcript = " ".join(transcript_buffer)
+                    await f.write(full_transcript + "\n")
+            except Exception as e:
+                logger.error("Failed to write transcript file: %s", e)
+            logger.debug("Calling on_file_transcript callback with %s", output_transcript_file_path)
+            if self.config.events.get("on_file_transcript"):
+                self.config.events["on_file_transcript"](output_transcript_file_path)
+            transcript_event.set()
+
+        def buffer_transcript(data):
+            nonlocal last_transcript_time
+            last_transcript_time = pytime.time()
+            # If data is a dict and has 'transcript', buffer only the transcript string
+            if isinstance(data, dict) and 'transcript' in data:
+                transcript_buffer.append(str(data['transcript']))
+            else:
+                transcript_buffer.append(str(data))
+            logger.debug("Buffering transcript - transcript_buffer: %s", transcript_buffer)
+        self.config.events["on_transcript"] = buffer_transcript
+        # Connect if not connected
+        if not self.sio or not self.sio.connected:
+            await self.connect(auto_record=False)
+        # Stream audio in chunks
+        logger.debug("Streaming audio in %d-byte chunks...", CHUNK_SIZE)
+        try:
+            for i in range(0, len(audio_data), CHUNK_SIZE):
+                chunk = audio_data[i:i+CHUNK_SIZE]
+                logger.debug("Streaming chunk %d / %d", i//CHUNK_SIZE+1, len(audio_data)//CHUNK_SIZE+1)
+                await self._stream_audio_data(chunk)
+                # await asyncio.sleep(0.5)  # Sleep for 500 milliseconds
+        except Exception as e:
+            logger.error("Error streaming audio file: %s", e)
+            self.config.events["on_transcript"] = buffer_transcript
+            if temp_audio:
+                os.unlink(temp_audio.name)
+            return
+        # Wait for transcript events
+        logger.debug("Waiting for transcript events...")
+        await asyncio.sleep(1)
+        # Start background task to wait for final transcript
+        asyncio.create_task(wait_for_final_transcript())
+        await transcript_event.wait()
+        # Clean up
+        await self.disconnect()
+        if temp_audio:
+            logger.debug("Cleaning up temporary file: %s", temp_audio.name)
+            os.unlink(temp_audio.name)
+            
     def get_active_keywords(self) -> List[str]:
         """Get the currently active keywords"""
         return self.active_keywords.copy()
@@ -288,7 +423,7 @@ class AiolaSttClient:
                 self.config.events["on_keyword_set"](valid_keywords)
 
         except Exception as e:
-            logger.error(f"Error setting keywords: {e}")
+            logger.error("Error setting keywords: %s", e)
             self._handle_error(
                 f"Error setting keywords: {str(e)}",
                 AiolaErrorCode.KEYWORDS_ERROR,
@@ -315,7 +450,7 @@ class AiolaSttClient:
 
         # Validate chunk size
         if len(audio_data) > AUDIO_CHUNK_SIZE:
-            error_msg = f"Audio chunk size ({len(audio_data)/2} bytes) exceeds maximum allowed size of {AUDIO_CHUNK_SIZE/2:.0f} bytes"
+            error_msg = "Audio chunk size (%d bytes) exceeds maximum allowed size of %d bytes" % (len(audio_data)/2, AUDIO_CHUNK_SIZE/2)
             logger.error(error_msg)
             self._handle_error(
                 error_msg,
@@ -357,7 +492,7 @@ class AiolaSttClient:
                 {"original_error": str(e)}
             )
         finally:
-            logger.info("Audio streaming stopped. Total chunks sent: %d", chunk_count)
+            logger.debug("Audio streaming stopped. Total chunks sent: %d", chunk_count)
             self.recording_in_progress = False
             if self.config.events.get("on_stop_record"):
                 self.config.events["on_stop_record"]()
@@ -480,4 +615,85 @@ class AiolaSttClient:
 
         if self.config.events.get("on_disconnect"):
             self.config.events["on_disconnect"]()
+            
+    def _convert_to_wav(self, input_path, output_path, target_sr=16000):
+        """
+        Convert an audio file (mp3/mp4/wav) to mono WAV at target_sr. Returns output_path.
+        input_path: str - The path to the input audio file
+        output_path: str - The path to the output WAV file
+        target_sr: int - The sample rate to convert the audio to
+        Raises an AiolaError if the sample rate is below the required rate.
+        """
+        logger.debug("Converting audio file to WAV: %s", input_path)
+        file_ext = os.path.splitext(input_path)[1][1:].lower()
+        if file_ext == "wav":
+            # Check if conversion is needed
+            with wave.open(input_path, "rb") as wf:
+                sample_rate = wf.getframerate()
+                channels = wf.getnchannels()
+                logger.debug("Audio properties: sample_rate=%d, channels=%d", sample_rate, channels)
+                if sample_rate < REQUIRED_SAMPLE_RATE:
+                    raise AiolaError(
+                        f"Sample rate {sample_rate}Hz is below required {REQUIRED_SAMPLE_RATE}Hz",
+                        AiolaErrorCode.FILE_TRANSCRIPTION_ERROR,
+                        {"sample_rate": sample_rate, "required_rate": REQUIRED_SAMPLE_RATE}
+                    )
+                if sample_rate == target_sr and channels == 1:
+                    return input_path  # Already correct format
+            # Otherwise, load and convert
+            audio_np, sr = sf.read(input_path, dtype='int16', always_2d=True)
+            if audio_np.shape[1] > 1:
+                audio_np = np.mean(audio_np, axis=1)
+            if sr != target_sr:
+                audio_np = AiolaSttClient._downsample_audio(audio_np, sr, target_sr)
+            sf.write(output_path, audio_np, target_sr, format='WAV', subtype='PCM_16')
+            return output_path
+        # For mp3/mp4
+        container = av.open(input_path)
+        audio_stream = next(s for s in container.streams if s.type == "audio")
+        logger.debug("Audio stream for non-WAV file properties: sample_rate=%d, channels=%d", audio_stream.sample_rate, audio_stream.channels)
+        if audio_stream.sample_rate < REQUIRED_SAMPLE_RATE:
+            raise AiolaError(
+                f"Sample rate {audio_stream.sample_rate}Hz is below required {REQUIRED_SAMPLE_RATE}Hz",
+                AiolaErrorCode.FILE_TRANSCRIPTION_ERROR,
+                {"sample_rate": audio_stream.sample_rate, "required_rate": REQUIRED_SAMPLE_RATE}
+            )
+        resampler = AudioResampler(format="s16", layout="mono", rate=target_sr)
+        out = av.open(output_path, mode="w", format="wav")
+        out_stream = out.add_stream("pcm_s16le", rate=target_sr, layout="mono")
+        for packet in container.demux(audio_stream):
+            for frame in packet.decode():
+                frame.pts = None
+                if (
+                    frame.format.name != "s16"
+                    or frame.sample_rate != target_sr
+                    or frame.layout.name != "mono"
+                ):
+                    resampled_frames = resampler.resample(frame)
+                    if isinstance(resampled_frames, list):
+                        for resampled_frame in resampled_frames:
+                            if resampled_frame:
+                                for packet in out_stream.encode(resampled_frame):
+                                    out.mux(packet)
+                    elif resampled_frames is not None:
+                        for packet in out_stream.encode(resampled_frames):
+                            out.mux(packet)
+                else:
+                    for packet in out_stream.encode(frame):
+                        out.mux(packet)
+        for packet in out_stream.encode(None):
+            out.mux(packet)
+        out.close()
+        container.close()
+        return output_path        
+    
+    
+    @staticmethod
+    def _downsample_audio(audio_np, orig_sr, target_sr):
+        """
+        Downsample a numpy audio array from orig_sr to target_sr using polyphase filtering.
+        """
+        if orig_sr == target_sr:
+            return audio_np
+        return resample_poly(audio_np, target_sr, orig_sr).astype(np.int16)
             
