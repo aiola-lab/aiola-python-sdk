@@ -80,7 +80,6 @@ def client(config):
     }), patch('aiola_stt.client.REQUIRED_SAMPLE_RATE', REQUIRED_SAMPLE_RATE), \
        patch('av.audio.resampler.AudioResampler', return_value=mock_resampler):
         # Import modules
-        from aiola_stt.config import AiolaConfig, AiolaQueryParams
         from aiola_stt.client import AiolaSttClient
         
         # Create client instance
@@ -137,7 +136,6 @@ class TestAiolaSttClientTranscription:
              patch('aiola_stt.client.wave.open', return_value=mock_wave_cm), \
              patch('aiola_stt.client.aiofiles.open', return_value=mock_cm), \
              patch('os.path.exists', return_value=True), \
-             patch('asyncio.create_task') as mock_create_task, \
              patch('asyncio.sleep', AsyncMock()) as mock_sleep, \
              patch('asyncio.Event') as mock_event_class:
             mock_event = mock_event_class.return_value
@@ -201,7 +199,7 @@ class TestAiolaSttClientTranscription:
             assert result_path == output_wav
             # Ensure the write operation is called with correct output path and sample rate
             mock_write.assert_called()
-            args, kwargs = mock_write.call_args
+            args, _ = mock_write.call_args
             assert args[0] == output_wav
             assert args[2] == 16000
     
