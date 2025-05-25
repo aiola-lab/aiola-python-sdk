@@ -31,8 +31,9 @@ STEP_MESSAGES=(
   "Installing build"
   "Installing aiOla_stt"
   "Installing aiOla_tts"
+  "DONE"
 )
-TOTAL_STEPS=5
+TOTAL_STEPS=${#STEP_MESSAGES[@]}
 STEP=0
 # Progress bar function (persistent at top)
 progress_bar() {
@@ -96,4 +97,7 @@ python -m build libs/speech_to_text/aiola_stt &> /dev/null && pip install -e lib
 STEP=$((STEP+1))
 progress_bar $STEP $TOTAL_STEPS
 python -m build libs/text_to_speech/aiola_tts &> /dev/null && pip install -e libs/text_to_speech/aiola_tts"[dev]" &> /dev/null
-STEP_MESSAGES[STEP]="DONE"
+
+# Step 6: Print final progress bar and DONE message
+STEP=$((STEP+1))
+progress_bar $STEP $TOTAL_STEPS

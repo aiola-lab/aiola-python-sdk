@@ -30,8 +30,9 @@ STEP_MESSAGES=(
   "Deactivating any active virtual environment"
   "Creating and activating a new virtual environment at the project root"
   "Preparing Examples"
+  "DONE"
 )
-TOTAL_STEPS=6
+TOTAL_STEPS=${#STEP_MESSAGES[@]}
 STEP=0
 # Progress bar function (persistent at top)
 progress_bar() {
@@ -81,12 +82,7 @@ source .venv/bin/activate &> /dev/null
 STEP=$((STEP+1))
 progress_bar $STEP $TOTAL_STEPS
 
-# Step 3: Install build
-pip install build &> /dev/null
-STEP=$((STEP+1))
-progress_bar $STEP $TOTAL_STEPS
-
-# Step 4: Prepare Examples
+# Step 3: Prepare Examples
 STEP=$((STEP+1))
 progress_bar $STEP $TOTAL_STEPS
 pip install examples/stt/ &> /dev/null
@@ -94,7 +90,6 @@ pip install examples/tts/ &> /dev/null
 
 # Print final progress bar and DONE message
 STEP=$((STEP+1))
-STEP_MESSAGES[STEP]="DONE"
 progress_bar $STEP $TOTAL_STEPS
 
 # Print summary
