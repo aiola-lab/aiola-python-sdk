@@ -1,7 +1,6 @@
 # flake8: noqa: D100,D101,D102,D103,D104,D105,D106,D107
 # pylint: disable=missing-function-docstring,missing-class-docstring,missing-module-docstring
 import pytest
-import sys
 from unittest.mock import AsyncMock, patch, MagicMock
 from aiola_stt.config import AiolaConfig, AiolaQueryParams
 
