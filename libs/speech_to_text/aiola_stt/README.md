@@ -1,18 +1,13 @@
-# aiOla Speech-To-Text SDK
+# aiOla Speech-to-Text SDK
 
-The aiOla Streaming SDK provides Python bindings for aiOla's real-time streaming services, enabling real-time audio streaming, transcription, and keyword spotting capabilities.
+Python SDK for aiOla's Speech-to-Text API.
 
 ## Features
 
-- Real-time audio streaming with microphone support
-- Custom audio stream support
-- Real-time transcription
+- Real-time audio streaming
+- File transcription
 - Keyword spotting
 - Voice Activity Detection (VAD)
-- Event-driven architecture
-- Multi-language support
-- Configurable audio parameters
-- Error handling and logging
 
 ## Installation
 
@@ -22,43 +17,34 @@ pip install aiola-stt
 
 ## Usage
 
-### Basic Usage
-
 ```python
 from aiola_stt import AiolaSttClient, AiolaConfig, AiolaQueryParams
 
-# Create configuration
 config = AiolaConfig(
-    api_key="your-api-key",  # i.e. from https://api.aiola.ai
-    query_params=AiolaQueryParams(
-        execution_id="your-execution-id",  # 4-24 alphanumeric characters, required
-        # flow_id="optional-flow-id",      # Optional, defaults to playground flow
-        # lang_code="en_US",               # Optional, defaults to en_US
-        # time_zone="UTC"                  # Optional, defaults to UTC
-    
-    ## For additional information, refer to the AiolaConfig section
-    )
+    api_key="YOUR_KEY",
+    query_params=AiolaQueryParams(execution_id="YOUR_GENERATED_ID")
 )
-
-# Initialize client
 client = AiolaSttClient(config)
-
-# Connect and start recording with default built-in microphone
 await client.connect(auto_record=True)
-
-# Stop recording
-await client.stop_recording()
-
-# Clean up
-await client.cleanup_socket()
 ```
 
-## Aiola Config
+## Configuration
 
-### Api Key
+``` python
+AiolaConfig:{
+    api_key: str
+    query_params: AiolaQueryParams
+    base_url: Optional[str] = 'https://api.aiola.ai'
+    mic_config: Optional[MicConfig] = field(default_factory=MicConfig)
+    vad_config: Optional[VadConfig] = field(default_factory=VadConfig)
+    events: Optional[AiolaEvents] = field(default_factory=dict)
+    transports: Literal["polling", "websocket", "all"] = "all" 
+}
+```
+
 **api_key** (str): Authentication key for the aiOla service
 
-### Query Parameters
+**Query Parameters**
 
 The `query_params` argument is required in the configuration and controls session and recognition behavior. It must be an instance of `AiolaQueryParams`:
 
@@ -109,7 +95,7 @@ events = AiolaSocketEvents(
 
 # Add events to config
 config = AiolaSocketConfig(
-    base_url="your-api-key", # i.e https://api.aiola.ai
+    base_url="your-base-url", # i.e https://api.aiola.ai
     namespace=AiolaSocketNamespace.EVENTS,
     api_key="your-api-key",
     query_params={},
@@ -139,6 +125,33 @@ async def custom_audio_generator():
 # Use custom audio generator
 await client.connect(auto_record=True, custom_stream_generator=custom_audio_generator())
 ```
+#### Media File Upload
+```python
+from aiola_stt.client import AiolaSttClient
+from aiola_stt.config import AiolaSocketConfig
+
+def on_file_transcript(file_path):
+    <your code here...>
+
+# Configure client
+config = AiolaSocketConfig(
+    base_url="your-base-url",
+    api_key="your-api-key",
+    query_params=AiolaQueryParams(execution_id='<Generate your own execution id>'), # Required field, 4 to 24 characters long and contains only letters and numbers
+    events={
+            "on_error": on_error,
+            "on_file_transcript": on_file_transcript
+        },
+)
+
+# Initialize client
+client = AiolaSttClient(config)
+
+# Connect and start recording
+await client.connect(auto_record=True)
+await client.transcribe_file(file_path, output_transcript_file_path)
+
+```
 
 ### Microphone Configuration
 
@@ -161,14 +174,6 @@ vad_config = VadConfig(
     vad_threshold=0.5,              # VAD threshold (0.0 to 1.0)
     min_silence_duration_ms=250     # Minimum silence duration
 )
-```
-
-## Development
-
-To install development dependencies:
-
-```bash
-pip install -e ".[dev]"
 ```
 
 ## Error Handling

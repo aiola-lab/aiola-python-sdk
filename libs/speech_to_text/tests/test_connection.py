@@ -1,7 +1,7 @@
 # flake8: noqa: D100,D101,D102,D103,D104,D105,D106,D107
 # pylint: disable=missing-function-docstring,missing-class-docstring,missing-module-docstring
 import pytest
-from aiola_stt.client import AiolaSttClient
+from unittest.mock import AsyncMock, patch, MagicMock
 from aiola_stt.config import AiolaConfig, AiolaQueryParams
 
 @pytest.fixture
@@ -14,9 +14,32 @@ def config():
         )
     )
 
+def mock_socketio_factory():
+    mock_sio_client = MagicMock()
+    mock_sio_client.connected = False
+    mock_sio_client.connect = AsyncMock()
+    mock_sio_client.disconnect = AsyncMock()
+    mock_sio_client.emit = AsyncMock()
+    mock_sio_client.call = AsyncMock()
+    # Mock the event decorator to simply return the function
+    mock_sio_client.event = lambda *args, **kwargs: lambda f: f
+    return mock_sio_client
+
 @pytest.fixture
 def client(config):
-    return AiolaSttClient(config)
+    # Create the mock modules
+    mock_socketio = MagicMock()
+    mock_socketio.AsyncClient = MagicMock()
+    
+    mock_sd = MagicMock()
+    mock_sd.RawInputStream = MagicMock()
+    
+    # Patch the modules in sys.modules
+    with patch.dict('sys.modules', {'socketio': mock_socketio, 'sounddevice': mock_sd}):
+        # Now import AiolaSttClient after patching
+        from aiola_stt.client import AiolaSttClient
+        client_instance = AiolaSttClient(config, sio_client_factory=mock_socketio_factory)
+        yield client_instance
 
 @pytest.fixture(autouse=True)
 def clear_connect_side_effect(client):
@@ -45,7 +68,7 @@ class TestAiolaSttClientConnection:
         assert client.recording_in_progress
 
     @pytest.mark.asyncio
-    async def test_stop_recording(self, client, ):
+    async def test_stop_recording(self, client):
         await connect_and_set_connected(client)
         await client.stop_recording()
         assert not client.recording_in_progress
@@ -69,8 +92,6 @@ def test_query_params_flow_id_override():
     assert params.flow_id == "custom_flow_id"
 
 def test_query_params_invalid_lang_code():
-    import pytest
     from pydantic import ValidationError
-    # lang_code must be one of SupportedLang; 'xx_XX' is not valid
     with pytest.raises(ValidationError):
         AiolaQueryParams(execution_id="abcd1234", lang_code="xx_XX") 

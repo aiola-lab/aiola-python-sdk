@@ -6,7 +6,7 @@ requires-python = ">=3.8"
 dependencies = [
     "colorlog>=6.9.0",
     "numpy>=1.24.0",
-    "aiola-stt==0.1.4"
+    "aiola-stt==0.1.6"
 ]
 
 [build-system]
@@ -14,4 +14,4 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-py-modules = ["deafult_audio_stream_auto_record", "deafult_audio_stream_lazy_record", "custom_audio_stream", "deafult_audio_stream2"] 
+py-modules = ["deafult_audio_stream_auto_record", "deafult_audio_stream_lazy_record", "custom_audio_stream", "file_transcription_example"] 

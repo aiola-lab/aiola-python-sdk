@@ -113,8 +113,7 @@ async def audio_stream_handler() -> AsyncGenerator[bytes, None]:
     - channels: 1 (mono)
     """
     # Get the directory where this script is located
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    wav_path = os.path.join(script_dir, 'wav_sample.wav')
+    wav_path = os.path.join('examples/stt/input_file_samples/wav_sample_16000_mono.wav')
     
     # Open a WAV file for reading
     with wave.open(wav_path, 'rb') as wav_file:

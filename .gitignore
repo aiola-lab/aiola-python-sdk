@@ -171,3 +171,6 @@ cython_debug/
 .pypirc
 synthesized_audio.wav
 streamed_audio.wav
+example_output/
+.coveragerc
+.DS_Store

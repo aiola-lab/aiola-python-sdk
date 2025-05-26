@@ -51,6 +51,7 @@ class AiolaEvents(TypedDict, total=False):
     on_stop_record: Callable[[], None]
     on_keyword_set: Callable[[List[str]], None]
     on_error: Callable[[AiolaError], None]
+    on_file_transcript: Callable[[str], None]
 
 class AiolaQueryParams(BaseModel):
     """Query parameters for the aiOla streaming service.

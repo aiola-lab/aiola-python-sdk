@@ -5,8 +5,6 @@ import colorlog
 
 from aiola_stt import AiolaSttClient, AiolaConfig, AiolaQueryParams, VadConfig, MicConfig
 
-
-
 # Configure root logger first
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.INFO)
