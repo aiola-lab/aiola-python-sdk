@@ -5,12 +5,11 @@ This repository contains Python SDKs for aiOla's Text-to-Speech (TTS) and Speech
 ## TL;DR - Demo
 
 Want to try out the playground? Just clone and run:
-`. ./build_examples.sh `
 
-<div style="display: flex; gap: 20px; justify-content: center;">
-  <video src="https://github.com/user-attachments/assets/6dbbb71d-9f70-46bb-8395-506d3d05abba" alt="stt" style="max-width: 65%; border: 2px solid #0e9375; border-radius: 8px;">
-  </video>
-</div>
+`. ./scripts/build_examples.sh `
+
+https://github.com/user-attachments/assets/45319b52-3748-4b61-8127-adcaed96a64d
+
 
 ## SDKs
 
