@@ -2,6 +2,7 @@ import asyncio
 import signal
 import logging
 import colorlog
+import sys
 
 from aiola_stt import AiolaSttClient, AiolaConfig, AiolaQueryParams
 
@@ -158,8 +159,9 @@ async def main():
             
     # Register signal handler
     loop = asyncio.get_event_loop()
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, signal_handler)
+    if sys.platform != "win32":
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, signal_handler)
 
     try:
         logger.info("Microphone is recording 🎤... (🛑Press Ctrl+C to exit)")
