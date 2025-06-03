@@ -30,7 +30,7 @@ await client.connect(auto_record=True)
 
 ## Configuration
 
-``` python
+```python
 AiolaConfig:{
     api_key: str
     query_params: AiolaQueryParams
@@ -38,7 +38,7 @@ AiolaConfig:{
     mic_config: Optional[MicConfig] = field(default_factory=MicConfig)
     vad_config: Optional[VadConfig] = field(default_factory=VadConfig)
     events: Optional[AiolaEvents] = field(default_factory=dict)
-    transports: Literal["polling", "websocket", "all"] = "all" 
+    transports: Literal["polling", "websocket", "all"] = "all"
 }
 ```
 
@@ -81,7 +81,7 @@ See the [examples](../../examples/stt/) for more advanced usage.
 ### Event Handling
 
 ```python
-from aiola_streaming_sdk import AiolaSocketEvents
+from aiola_stt import AiolaSocketEvents
 
 # Define event handlers
 events = AiolaSocketEvents(
@@ -125,7 +125,9 @@ async def custom_audio_generator():
 # Use custom audio generator
 await client.connect(auto_record=True, custom_stream_generator=custom_audio_generator())
 ```
+
 #### Media File Upload
+
 ```python
 from aiola_stt.client import AiolaSttClient
 from aiola_stt.config import AiolaSocketConfig
@@ -156,7 +158,7 @@ await client.transcribe_file(file_path, output_transcript_file_path)
 ### Microphone Configuration
 
 ```python
-from aiola_streaming_sdk import MicConfig
+from aiola_stt import MicConfig
 
 mic_config = MicConfig(
     sample_rate=16000,  # Hz
@@ -168,7 +170,7 @@ mic_config = MicConfig(
 ### Voice Activity Detection Configuration
 
 ```python
-from aiola_streaming_sdk import VadConfig
+from aiola_stt import VadConfig
 
 vad_config = VadConfig(
     vad_threshold=0.5,              # VAD threshold (0.0 to 1.0)
@@ -181,7 +183,7 @@ vad_config = VadConfig(
 The SDK provides comprehensive error handling through the `AiolaSocketError` class:
 
 ```python
-from aiola_streaming_sdk import AiolaSocketError, AiolaSocketErrorCode
+from aiola_stt import AiolaSocketError, AiolaSocketErrorCode
 
 try:
     await client.connect()
