@@ -16,7 +16,7 @@ pip install aiola-stt
 ```
 
 ## Usage
-
+<!--snippet;quickstart-->
 ```python
 from aiola_stt import AiolaSttClient, AiolaConfig, AiolaQueryParams
 
@@ -29,7 +29,6 @@ await client.connect(auto_record=True)
 ```
 
 ## Configuration
-
 ```python
 AiolaConfig:{
     api_key: str
