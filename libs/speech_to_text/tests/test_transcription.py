@@ -314,44 +314,40 @@ class TestAiolaSttClientTranscription:
         assert len(same_rate_result) == len(test_signal)
 
     def test_silence_padding_functionality(self, client):
-        """Test the _silence_padding method to ensure it adds 250ms silence and makes audio divisible by chunk_size"""
+        """Test the _silence_padding method to ensure it adds 500ms silence and makes audio divisible by chunk_size"""
 
         # Test parameters
         sample_rate = 16000  # 16kHz
         chunk_size = 4096  # 4KB chunks
 
-        # Test case 1: Small audio that needs both 250ms padding and chunk alignment
+        # Test case 1: Small audio that needs both 500ms padding and chunk alignment
         original_audio_length = 10000  # 10KB
         original_audio_data = (
             b"\x01" * original_audio_length
         )  # Non-zero data to distinguish from padding
 
-        # Mock the test file saving function to avoid actual file I/O during testing
-        with patch.object(client, "_save_padded_audio_for_testing") as mock_save:
-            padded_audio = client._silence_padding(
-                original_audio_data, sample_rate, chunk_size
-            )
+        # Call the method directly without mocking save function (since it's been removed)
+        padded_audio = client._silence_padding(
+            original_audio_data, sample_rate, chunk_size
+        )
 
-            # Verify the test file saving function was called
-            mock_save.assert_called_once_with(padded_audio, sample_rate)
+        # Calculate expected 500ms silence in bytes
+        silence_duration_ms = 500
+        silence_samples = int(silence_duration_ms * sample_rate / 1000)  # 8000 samples
+        silence_bytes = silence_samples * 2  # 16000 bytes (16-bit audio)
 
-        # Calculate expected 250ms silence in bytes
-        silence_duration_ms = 250
-        silence_samples = int(silence_duration_ms * sample_rate / 1000)  # 4000 samples
-        silence_bytes = silence_samples * 2  # 8000 bytes (16-bit audio)
-
-        # Expected length after 250ms padding
-        after_250ms_length = original_audio_length + silence_bytes  # 18000 bytes
+        # Expected length after 500ms padding
+        after_500ms_length = original_audio_length + silence_bytes  # 26000 bytes
 
         # Calculate expected final length after chunk alignment
-        remainder = after_250ms_length % chunk_size  # 18000 % 4096 = 1520
+        remainder = after_500ms_length % chunk_size  # 26000 % 4096 = 1760
         if remainder != 0:
-            additional_padding = chunk_size - remainder  # 4096 - 1520 = 2576
+            additional_padding = chunk_size - remainder  # 4096 - 1760 = 2336
             expected_final_length = (
-                after_250ms_length + additional_padding
-            )  # 20576 bytes
+                after_500ms_length + additional_padding
+            )  # 28336 bytes
         else:
-            expected_final_length = after_250ms_length
+            expected_final_length = after_500ms_length
 
         # Verify the final length
         assert len(padded_audio) == expected_final_length
@@ -364,12 +360,12 @@ class TestAiolaSttClientTranscription:
         # Verify the original data is preserved at the beginning
         assert padded_audio[:original_audio_length] == original_audio_data
 
-        # Verify 250ms of silence was added (should be all zeros)
+        # Verify 500ms of silence was added (should be all zeros)
         silence_start = original_audio_length
         silence_end = silence_start + silence_bytes
         silence_section = padded_audio[silence_start:silence_end]
         assert silence_section == b"\x00" * silence_bytes, (
-            "250ms silence section should be all zeros"
+            "500ms silence section should be all zeros"
         )
 
         # Verify additional chunk alignment padding (should also be zeros)
@@ -397,28 +393,23 @@ class TestAiolaSttClientTranscription:
         sample_rate = 16000
         chunk_size = 4096
 
-        # Test case 1: Audio that's already aligned after 250ms padding
-        # We need to find a length where original + 250ms padding is divisible by chunk_size
-        silence_bytes = int(250 * sample_rate / 1000) * 2  # 8000 bytes
+        # Test case 1: Audio that's already aligned after 500ms padding
+        # We need to find a length where original + 500ms padding is divisible by chunk_size
+        silence_bytes = int(500 * sample_rate / 1000) * 2  # 16000 bytes
 
-        # Find a length where (length + 8000) % 4096 == 0
-        # 8000 % 4096 = 1808, so we need (length + 1808) % 4096 == 0
-        # This means length % 4096 == (4096 - 1808) % 4096 == 2288
-        # But let's double-check: (2288 + 8000) % 4096 = 10288 % 4096 = 2000 ≠ 0
-        # We need: (length + 8000) % 4096 == 0
-        # So: length % 4096 == (4096 - (8000 % 4096)) % 4096
-        # 8000 % 4096 = 1808, so we need length % 4096 == (4096 - 1808) % 4096 = 2288
-        # Actually, let's use a simpler approach: find length where (length + 8000) is divisible by 4096
-        # We want length + 8000 = n * 4096 for some integer n
-        # Let's use n = 3, so length + 8000 = 12288, therefore length = 4288
-        aligned_length = 4288  # This should result in no additional padding needed
+        # Find a length where (length + 16000) % 4096 == 0
+        # 16000 % 4096 = 3616, so we need (length + 3616) % 4096 == 0
+        # This means length % 4096 == (4096 - 3616) % 4096 == 480
+        # Let's use a simpler approach: find length where (length + 16000) is divisible by 4096
+        # We want length + 16000 = n * 4096 for some integer n
+        # Let's use n = 5, so length + 16000 = 20480, therefore length = 4480
+        aligned_length = 4480  # This should result in no additional padding needed
 
         original_audio_data = b"\x01" * aligned_length
 
-        with patch.object(client, "_save_padded_audio_for_testing"):
-            padded_audio = client._silence_padding(
-                original_audio_data, sample_rate, chunk_size
-            )
+        padded_audio = client._silence_padding(
+            original_audio_data, sample_rate, chunk_size
+        )
 
         expected_length = aligned_length + silence_bytes
         assert len(padded_audio) == expected_length
@@ -427,8 +418,7 @@ class TestAiolaSttClientTranscription:
         # Test case 2: Very small audio file
         small_audio = b"\x01" * 100
 
-        with patch.object(client, "_save_padded_audio_for_testing"):
-            padded_small = client._silence_padding(small_audio, sample_rate, chunk_size)
+        padded_small = client._silence_padding(small_audio, sample_rate, chunk_size)
 
         assert len(padded_small) % chunk_size == 0
         assert len(padded_small) >= len(small_audio) + silence_bytes
@@ -436,55 +426,9 @@ class TestAiolaSttClientTranscription:
         # Test case 3: Large audio file
         large_audio = b"\x01" * 50000
 
-        with patch.object(client, "_save_padded_audio_for_testing"):
-            padded_large = client._silence_padding(large_audio, sample_rate, chunk_size)
+        padded_large = client._silence_padding(large_audio, sample_rate, chunk_size)
 
         assert len(padded_large) % chunk_size == 0
         assert len(padded_large) >= len(large_audio) + silence_bytes
 
         print("✅ All edge case tests passed")
-
-    def test_save_padded_audio_for_testing(self, client, tmp_path):
-        """Test the _save_padded_audio_for_testing method"""
-
-        # Create test audio data
-        sample_rate = 16000
-        test_audio_data = np.random.randint(
-            -32768, 32767, 16000, dtype=np.int16
-        ).tobytes()
-
-        # Mock the datetime to control the filename - fix the import path
-        with patch("datetime.datetime") as mock_datetime:
-            mock_datetime.now.return_value.strftime.return_value = "20241220_143052"
-
-            # Mock os.makedirs and wave.open
-            with (
-                patch("aiola_stt.client.os.makedirs") as mock_makedirs,
-                patch("aiola_stt.client.wave.open") as mock_wave_open,
-            ):
-                # Set up wave file mock
-                mock_wave_file = MagicMock()
-                mock_wave_cm = MagicMock()
-                mock_wave_cm.__enter__.return_value = mock_wave_file
-                mock_wave_cm.__exit__.return_value = None
-                mock_wave_open.return_value = mock_wave_cm
-
-                # Call the method
-                client._save_padded_audio_for_testing(test_audio_data, sample_rate)
-
-                # Verify directory creation
-                mock_makedirs.assert_called_once_with("example_output", exist_ok=True)
-
-                # Verify wave file was opened with correct path
-                expected_path = os.path.join(
-                    "example_output", "padded_audio_20241220_143052.wav"
-                )
-                mock_wave_open.assert_called_once_with(expected_path, "wb")
-
-                # Verify wave file configuration
-                mock_wave_file.setnchannels.assert_called_once_with(1)  # Mono
-                mock_wave_file.setsampwidth.assert_called_once_with(2)  # 16-bit
-                mock_wave_file.setframerate.assert_called_once_with(sample_rate)
-                mock_wave_file.writeframes.assert_called_once_with(test_audio_data)
-
-        print("✅ Save padded audio test passed")

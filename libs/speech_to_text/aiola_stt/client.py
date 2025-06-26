@@ -33,7 +33,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger("aiola_streaming_sdk")
-logger.setLevel('INFO')
+logger.setLevel("INFO")
 
 
 class AiolaSttClient:
@@ -755,7 +755,7 @@ class AiolaSttClient:
         Apply silence padding to audio data to ensure proper chunking.
 
         This method:
-        1. Adds 250ms of silence to the end of the audio
+        1. Adds 500ms of silence to the end of the audio
         2. Ensures the total audio length is divisible by chunk_size by adding additional silence padding
 
         Args:
@@ -770,7 +770,7 @@ class AiolaSttClient:
             "Applying silence padding - original length: %d bytes", len(audio_data)
         )
 
-        # Step 1: Add 250ms of silence to the end of the audio
+        # Step 1: Add 500ms of silence to the end of the audio
         silence_duration_ms = 500
         silence_samples = int(silence_duration_ms * sample_rate / 1000)
         # Each sample is 2 bytes (16-bit audio), so multiply by 2 for byte count
@@ -778,7 +778,7 @@ class AiolaSttClient:
         silence_data = b"\x00" * silence_bytes
         audio_data += silence_data
 
-        logger.debug("After 250ms silence padding: %d bytes", len(audio_data))
+        logger.debug("After 500ms silence padding: %d bytes", len(audio_data))
 
         # Step 2: Ensure the audio data length is divisible by chunk_size
         remainder = len(audio_data) % chunk_size
@@ -798,43 +798,4 @@ class AiolaSttClient:
             len(audio_data) // chunk_size,
         )
 
-        # For testing: save the padded audio to example_output folder
-        self._save_padded_audio_for_testing(audio_data, sample_rate)
-
         return audio_data
-
-    def _save_padded_audio_for_testing(
-        self, audio_data: bytes, sample_rate: int
-    ) -> None:
-        """
-        Save the padded audio data as a WAV file for testing purposes.
-        This function can be removed after testing is complete.
-
-        Args:
-            audio_data (bytes): The padded audio data
-            sample_rate (int): Sample rate of the audio
-        """
-        try:
-            # Create the output directory if it doesn't exist
-            output_dir = "example_output"
-            os.makedirs(output_dir, exist_ok=True)
-
-            # Generate output filename with timestamp
-            from datetime import datetime
-
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_path = os.path.join(output_dir, f"padded_audio_{timestamp}.wav")
-
-            # Write the padded audio as a WAV file
-            with wave.open(output_path, "wb") as wf:
-                wf.setnchannels(1)  # Mono
-                wf.setsampwidth(2)  # 16-bit (2 bytes per sample)
-                wf.setframerate(sample_rate)
-                wf.writeframes(audio_data)
-
-            logger.info("Padded audio saved for testing: %s", output_path)
-            print(f"🎵 Padded audio saved for testing: {output_path}")
-
-        except Exception as e:
-            logger.warning("Failed to save padded audio for testing: %s", e)
-            # Don't raise the error as this is just for testing
