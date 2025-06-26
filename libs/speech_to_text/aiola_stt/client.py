@@ -26,6 +26,7 @@ from .errors import AiolaError, AiolaErrorCode
 # Constants
 AUDIO_CHUNK_SIZE = 8192  # Maximum size of audio chunks in bytes
 REQUIRED_SAMPLE_RATE = 16000  # Required sample rate in Hz for audio processing
+SILENCE_DURATION_MS = 500  # Silence duration in milliseconds
 
 # Set up logging
 logging.basicConfig(
@@ -770,12 +771,12 @@ class AiolaSttClient:
             "Applying silence padding - original length: %d bytes", len(audio_data)
         )
 
-        # Step 1: Add 500ms of silence to the end of the audio
-        silence_duration_ms = 500
-        silence_samples = int(silence_duration_ms * sample_rate / 1000)
+        # Step 1: Add SILENCE_DURATION_MS of silence to the end of the audio
+        silence_samples = int(SILENCE_DURATION_MS * sample_rate / 1000)
         # Each sample is 2 bytes (16-bit audio), so multiply by 2 for byte count
+        silence_byte = b"\x00"
         silence_bytes = silence_samples * 2
-        silence_data = b"\x00" * silence_bytes
+        silence_data = silence_byte * silence_bytes
         audio_data += silence_data
 
         logger.debug("After 500ms silence padding: %d bytes", len(audio_data))
@@ -785,7 +786,7 @@ class AiolaSttClient:
         if remainder != 0:
             # Calculate how many more bytes needed to make it divisible by chunk_size
             additional_padding_length = chunk_size - remainder
-            additional_padding = b"\x00" * additional_padding_length
+            additional_padding = silence_byte * additional_padding_length
             audio_data += additional_padding
             logger.debug(
                 "Added %d bytes of additional padding for chunk alignment",
