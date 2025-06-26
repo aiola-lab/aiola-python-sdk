@@ -33,7 +33,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger("aiola_streaming_sdk")
-logger.setLevel("DEBUG")
+logger.setLevel("INFO")
 
 
 class AiolaSttClient:
