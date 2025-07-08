@@ -1,60 +1,196 @@
-# aiOla Python SDKs
+# aiOla Python SDK
 
-This repository contains Python SDKs for aiOla's Text-to-Speech (TTS) and Speech-to-Text (STT) services.
-
-## TL;DR - Demo
-
-Want to try out the playground? Just clone and run:
-
-`. ./scripts/build_examples.sh `
-
-https://github.com/user-attachments/assets/45319b52-3748-4b61-8127-adcaed96a64d
-
-
-## SDKs
-
-- [aiola-tts](libs/text_to_speech/aiola_tts/README.md): Text-to-Speech SDK
-- [aiola-stt](libs/speech_to_text/aiola_stt/README.md): Speech-to-Text SDK
+The official Python SDK for the [aiOla](https://aiola.com) API, designed to work seamlessly in both synchronous and asynchronous environments.
 
 ## Installation
 
 ```bash
-pip install aiola-tts
-pip install aiola-stt
+pip install aiola-python
+# or
+uv add aiola-python
 ```
 
-## Quick Examples
+## Usage
+
+### Instantiate the client
+
+```python
+import os
+from aiola import AiolaClient
+
+client = AiolaClient(
+    api_key=os.getenv("AIOLA_API_KEY"),
+)
+```
+
+#### Custom base URL (enterprises)
+
+You can direct the SDK to use your own endpoint by providing the `base_url` option:
+
+```python
+client = AiolaClient(
+    api_key=os.getenv("AIOLA_API_KEY"),
+    base_url="https://api.mycompany.aiola.ai",
+)
+```
+
+### Speech-to-Text – live streaming
+
+```python
+from aiola import AiolaClient
+from aiola.clients.stt.types import LiveEvents
+
+client = AiolaClient(api_key=os.getenv("AIOLA_API_KEY"))
+
+connection = client.stt.stream(
+    lang_code="en",
+    keywords:{
+        "Aiola": "aiOla"
+    }
+)
+
+connection.connect()
+
+@connection.on(LiveEvents.Transcript)
+def on_transcript(data):
+    print("📝 Transcript:", data)
+
+connection.send(audio_data)
+```
+
+### Speech-to-Text – file transcription
+
+```python
+from aiola import AiolaClient
+
+client = AiolaClient(api_key=os.getenv("AIOLA_API_KEY"))
+
+# Transcribe an audio file
+with open("audio.wav", "rb") as audio_file:
+    result = client.stt.transcribe_file(
+        file=audio_file,
+        lang_code="en",
+    )
+
+```
 
 ### Text-to-Speech
 
 ```python
-    from aiola_tts import AiolaTtsClient
-    client = AiolaTtsClient(bearer_token="YOUR_TOKEN")
-    audio = client.synthesize("Hello world")
+from aiola import AiolaClient
+
+client = AiolaClient(api_key=os.getenv("AIOLA_API_KEY"))
+
+response = client.tts.synthesize(
+    text="Hello, how can I help you today?",
+    voice="jess",
+    language="en",
+)
+
+with open("audio.wav", "wb") as f:
+    for chunk in response:
+        f.write(chunk)
 ```
 
-### Speech-to-Text
+### Text-to-Speech – streaming
 
 ```python
-    from aiola_stt import AiolaSttClient, AiolaConfig, AiolaQueryParams
-    config = AiolaConfig(api_key="YOUR_KEY", query_params=AiolaQueryParams(execution_id="YOUR_GENERATED_ID"))
-    client = AiolaSttClient(config)
-    await client.connect(auto_record=True)
+from aiola import AiolaClient
+from io import BytesIO
+
+client = AiolaClient(api_key=os.getenv("AIOLA_API_KEY"))
+
+response = client.tts.stream(
+    text="Hello, how can I help you today?",
+    voice="jess",
+    language="en",
+)
+
+audio = BytesIO()
+for chunk in response:
+    audio.write(chunk)
 ```
 
-## Features
+## Async Client
 
-| Speech-to-Text (STT)                                      | Text-to-Speech (TTS)                                  |
-|:----------------------------------------------------------|:------------------------------------------------------|
-| Real-time speech transcription                            | Convert text to speech and save as WAV files          |
-| File Transcription (mp4, mp3 & wav)                       | Real-time streaming of synthesized speech             |
-| Keyword spotting                                          | Multiple voice options available                      |
-| Voice Activity Detection (VAD)                            | Support for different audio formats (LINEAR16, PCM)   |
-| Support for custom audio streams                          |                                                      |
-| Event-driven architecture                                 |                                                      |
-| Multiple language support (en-US, de-DE, fr-FR, zh-ZH, es-ES, pt-PT) |                                                      |
+For asynchronous operations, use the `AsyncAiolaClient`:
 
+### Async Speech-to-Text – file transcription
 
-## License
+```python
+import asyncio
+import os
+from aiola import AsyncAiolaClient
 
-MIT License
+async def transcribe_file():
+    client = AsyncAiolaClient(api_key=os.getenv("AIOLA_API_KEY"))
+
+    with open("audio.wav", "rb") as audio_file:
+        result = await client.stt.transcribe_file(
+            file=audio_file,
+            lang_code="en",
+            keywords={
+                "aiola": "aiOla",
+            },
+        )
+
+    print(result)
+
+asyncio.run(transcribe_file())
+```
+
+### Async Text-to-Speech
+
+```python
+import asyncio
+import os
+from aiola import AsyncAiolaClient
+
+async def create_audio_file():
+    client = AsyncAiolaClient(api_key=os.getenv("AIOLA_API_KEY"))
+
+    response = client.tts.synthesize(
+        text="Hello, how can I help you today?",
+        voice="jess",
+        language="en",
+    )
+
+    with open("audio.wav", "wb") as f:
+        async for chunk in response:
+            f.write(chunk)
+
+asyncio.run(create_audio_file())
+```
+
+### Async Text-to-Speech – streaming
+
+```python
+import asyncio
+import os
+from aiola import AsyncAiolaClient
+from io import BytesIO
+
+async def stream_tts():
+    client = AsyncAiolaClient(api_key=os.getenv("AIOLA_API_KEY"))
+
+    response = client.tts.stream(
+        text="Hello, how can I help you today?",
+        voice="jess",
+        language="en",
+    )
+
+    audio = BytesIO()
+    async for chunk in response:
+        audio.write(chunk)
+
+asyncio.run(stream_tts())
+```
+
+## Requirements
+
+- Python 3.10+
+- For microphone streaming examples: `pyaudio` (install separately)
+
+## Examples
+
+The SDK includes several example scripts in the `examples/` directory.

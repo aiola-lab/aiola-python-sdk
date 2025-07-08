@@ -1,0 +1,62 @@
+[project]
+name = "aiola-python"
+version = "0.0.0.dev"
+description = "aiOla python sdk"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+dependencies = ["httpx>=0.27", "python-socketio[client]>=5.11"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=1.0.0",
+    "pytest-mock>=3.14.1",
+    "ruff>=0.4",
+    # "pyaudio>=0.2.14",
+]
+
+[tool.ruff]
+line-length = 120
+exclude = [".venv", "dist", "build", "tests", "examples"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[tool.hatch.build.targets.sdist]
+include = ["aiola"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["aiola"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.coverage.run]
+source = ["aiola"]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
+ignore = [
+    # Use `X | Y` for type annotations
+    "UP007",
+]
