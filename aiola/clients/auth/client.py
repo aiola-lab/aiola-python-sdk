@@ -7,10 +7,9 @@ from typing import Any
 
 import httpx
 
-from aiola.types import AiolaClientOptions
-
 from ...constants import DEFAULT_HEADERS, HTTP_TIMEOUT
 from ...errors import AiolaError
+from ...types import AiolaClientOptions
 
 
 class BaseAuthClient:
@@ -291,7 +290,7 @@ class AuthClient(BaseAuthClient):
                     headers=headers,
                     json=body,
                 )
-            
+
                 if not response.is_success:
                     raise AiolaError(
                         message=f"Session creation failed: {response.status_code}", status=response.status_code

@@ -34,11 +34,36 @@ client = AiolaClient(
 )
 ```
 
+#### Using Access Token
+
+You can also create a client using an access token directly:
+
+```python
+client = AiolaClient(
+    access_token=YOUR_ACCESS_TOKEN,
+)
+```
+
+#### Create Access Token
+
+You can create a temporary access token from an API key:
+
+```python
+access_token = AiolaClient.grant_token(AIOLA_API_KEY)
+
+client = AiolaClient(access_token=access_token)
+```
+
+This is useful for:
+- **Backend-Frontend separation**: Generate temporary tokens in backend, use in frontend
+- **Security**: Share access tokens instead of API keys
+- **Token management**: Implement custom authentication flows
+
 ### Speech-to-Text – live streaming
 
 ```python
 from aiola import AiolaClient
-from aiola.clients.stt.types import LiveEvents
+from aiola.types import LiveEvents
 
 client = AiolaClient(api_key=os.getenv("AIOLA_API_KEY"))
 

@@ -4,8 +4,7 @@ from typing import Any
 import socketio
 
 from ...errors import AiolaError, AiolaStreamingError, AiolaValidationError
-from ...types import AiolaClientOptions
-from .types import LiveEvents
+from ...types import AiolaClientOptions, LiveEvents
 
 
 class StreamConnection:

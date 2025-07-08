@@ -7,8 +7,6 @@ from urllib.parse import urlencode
 
 import httpx
 
-from aiola.types import AiolaClientOptions
-
 from ...errors import (
     AiolaAuthenticationError,
     AiolaConnectionError,
@@ -18,8 +16,8 @@ from ...errors import (
     AiolaValidationError,
 )
 from ...http_client import create_async_authenticated_client, create_authenticated_client
+from ...types import AiolaClientOptions, File, TasksConfig, TranscriptionResponse
 from .stream_client import AsyncStreamConnection, StreamConnection
-from .types import File, TasksConfig, TranscriptionResponse
 
 if TYPE_CHECKING:
     from ...clients.auth.client import AsyncAuthClient, AuthClient

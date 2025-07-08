@@ -1,7 +1,7 @@
 import os
 import pyaudio
 from aiola import AiolaClient
-from aiola.clients.stt.types import LiveEvents
+from aiola.types import LiveEvents
 
 
 AIOLA_API_KEY = os.getenv("AIOLA_API_KEY")
