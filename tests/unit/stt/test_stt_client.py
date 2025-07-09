@@ -5,8 +5,8 @@ from io import BytesIO
 import pytest
 import httpx
 
-from aiola import AiolaClient, AsyncAiolaClient, AiolaError, AiolaConnectionError
-from aiola.clients.stt.types import TasksConfig, LiveEvents, TranscriptionResponse
+from aiola import AiolaClient, AsyncAiolaClient, AiolaError
+from aiola.types import TasksConfig, LiveEvents
 from aiola.clients.stt.client import StreamConnection, AsyncStreamConnection
 
 from tests._helpers import (

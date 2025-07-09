@@ -42,7 +42,7 @@ class StreamConnection:
                 socketio_path=self._socketio_path,
                 namespaces=[self._namespace],
                 wait=True,
-                transports=["websocket"],
+                transports=["polling", "websocket"],
             )
         except Exception as exc:
             raise AiolaStreamingError("Failed to connect to Streaming service") from exc

@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 
 import httpx
 
+from ...constants import DEFAULT_WORKFLOW_ID
 from ...errors import (
     AiolaAuthenticationError,
     AiolaConnectionError,
@@ -36,6 +37,33 @@ class _BaseStt:
             return f"{self._options.base_url}?{urlencode(query_params)}"
         except Exception as exc:
             raise AiolaError("Failed to build streaming URL") from exc
+
+    def _build_query_and_headers(
+        self,
+        workflow_id: str | None,
+        execution_id: str | None,
+        lang_code: str | None,
+        time_zone: str | None,
+        keywords: dict[str, str] | None,
+        tasks_config: TasksConfig | None,
+        access_token: str,
+    ) -> tuple[dict[str, str], dict[str, str]]:
+        """Build query parameters and headers for streaming requests."""
+        execution_id = execution_id or str(uuid.uuid4())
+
+        query = {
+            "execution_id": execution_id,
+            "x-aiola-api-token": access_token,
+        }
+
+        headers = {
+            "X-Execution-Id": execution_id,
+            "X-Workflow-Id": workflow_id or DEFAULT_WORKFLOW_ID,
+            "x-lang-code": lang_code or "en",
+            "x-time-zone": time_zone or "UTC",
+        }
+
+        return query, headers
 
     def _validate_stream_params(
         self,
@@ -88,19 +116,12 @@ class SttClient(_BaseStt):
                 workflow_id=self._options.workflow_id,
             )
 
-            url = self._build_url(
-                {
-                    "flow_id": workflow_id or "",
-                    "execution_id": execution_id or str(uuid.uuid4()),
-                    "lang_code": lang_code or "en",
-                    "time_zone": time_zone or "UTC",
-                    "keywords": json.dumps(keywords or {}),
-                    "tasks_config": json.dumps(dict(tasks_config)) if tasks_config is not None else "{}",
-                    "x-aiola-api-token": access_token,
-                }
+            # Build query parameters and headers
+            query, headers = self._build_query_and_headers(
+                workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config, access_token
             )
 
-            headers = {"Authorization": f"Bearer {access_token}"}
+            url = self._build_url(query)
 
             return StreamConnection(
                 options=self._options, url=url, headers=headers, socketio_path=self._path, namespace=self._namespace
@@ -188,19 +209,12 @@ class AsyncSttClient(_BaseStt):
                 self._options.workflow_id,
             )
 
-            url = self._build_url(
-                {
-                    "flow_id": workflow_id or "",
-                    "execution_id": execution_id or str(uuid.uuid4()),
-                    "lang_code": lang_code or "en",
-                    "time_zone": time_zone or "UTC",
-                    "keywords": json.dumps(keywords or {}),
-                    "tasks_config": json.dumps(dict(tasks_config)) if tasks_config is not None else "{}",
-                    "x-aiola-api-token": access_token,
-                }
+            # Build query parameters and headers
+            query, headers = self._build_query_and_headers(
+                workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config, access_token
             )
 
-            headers = {"Authorization": f"Bearer {access_token}"}
+            url = self._build_url(query)
 
             return AsyncStreamConnection(
                 options=self._options, url=url, headers=headers, socketio_path=self._path, namespace=self._namespace

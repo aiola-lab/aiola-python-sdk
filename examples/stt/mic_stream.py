@@ -16,12 +16,7 @@ CHUNK = 4096  # Number of frames per buffer
 def main():
     client = AiolaClient(api_key=AIOLA_API_KEY)
 
-    connection = client.stt.stream(
-        lang_code="en",
-        keywords={
-            "aiola": "aiOla",
-        }
-    )
+    connection = client.stt.stream(lang_code="en")
 
     connection.connect()
 

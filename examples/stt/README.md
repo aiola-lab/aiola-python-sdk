@@ -28,9 +28,7 @@ def transcribe_file():
 
 # Stream audio in real-time for live transcription
 def live_streaming():
-    connection = client.stt.stream(
-        lang_code="en",
-    )
+    connection = client.stt.stream(lang_code="en")
 
     @connection.on(LiveEvents.Transcript)
     def on_transcript(data):

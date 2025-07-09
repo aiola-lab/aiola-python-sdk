@@ -278,11 +278,6 @@ class AuthClient(BaseAuthClient):
         try:
             body = {"workflow_id": workflow_id}
             headers = {**DEFAULT_HEADERS, "Content-Type": "application/json", "Authorization": f"Bearer {token}"}
-            print(f"Creating session with token: {token}")
-            print(f"Body: {body}")
-            print(f"Headers: {headers}")
-            print(f"URL: {f'{self._options.auth_base_url}/voip-auth/session'}")
-            print(f"Timeout: {HTTP_TIMEOUT}")
 
             with httpx.Client(timeout=HTTP_TIMEOUT) as client:
                 response = client.post(
@@ -297,7 +292,6 @@ class AuthClient(BaseAuthClient):
                     )
 
                 data = response.json()
-                print(data)
 
                 if not data.get("jwt"):
                     raise AiolaError(message="Invalid session response - no jwt found", code="INVALID_SESSION_RESPONSE")

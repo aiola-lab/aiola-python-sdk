@@ -67,12 +67,7 @@ from aiola.types import LiveEvents
 
 client = AiolaClient(api_key=os.getenv("AIOLA_API_KEY"))
 
-connection = client.stt.stream(
-    lang_code="en",
-    keywords:{
-        "Aiola": "aiOla"
-    }
-)
+connection = client.stt.stream(lang_code="en")
 
 connection.connect()
 
@@ -153,10 +148,7 @@ async def transcribe_file():
     with open("audio.wav", "rb") as audio_file:
         result = await client.stt.transcribe_file(
             file=audio_file,
-            lang_code="en",
-            keywords={
-                "aiola": "aiOla",
-            },
+            lang_code="en"
         )
 
     print(result)
