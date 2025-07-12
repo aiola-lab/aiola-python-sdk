@@ -54,6 +54,7 @@ class LiveEvents(str, enum.Enum):
     PiiRedaction = "pii_redaction"
     Error = "error"
     Disconnect = "disconnect"
+    Connect = "connect"
 
 
 class Segment(TypedDict):

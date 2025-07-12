@@ -23,19 +23,18 @@ class StreamConnection:
         self._headers = headers
         self._socketio_path = socketio_path
         self._namespace = namespace
-        self._sio: socketio.Client | None = None
+        self._sio: socketio.Client = socketio.Client(
+            reconnection=True,
+            reconnection_attempts=3,
+            reconnection_delay=1,
+        )
 
     def connect(self) -> None:
         """Establish the socket connection using stored parameters."""
-        if self._sio is not None and self._sio.connected:
+        if self._sio.connected:
             return  # Already connected
 
         try:
-            self._sio = socketio.Client(
-                reconnection=True,
-                reconnection_attempts=3,
-                reconnection_delay=1,
-            )
             self._sio.connect(
                 url=self._url,
                 headers=self._headers,
@@ -49,9 +48,6 @@ class StreamConnection:
 
     def on(self, event: LiveEvents, handler: Callable[..., Any] | None = None) -> Callable[..., Any]:
         """Register an event handler."""
-        if self._sio is None:
-            raise AiolaStreamingError("Connection not established")
-
         if not isinstance(event, LiveEvents) or not event:
             raise AiolaValidationError("Event name must be a non-empty string")
 
@@ -78,9 +74,6 @@ class StreamConnection:
 
     def send(self, data: bytes) -> None:
         """Send binary audio data."""
-        if self._sio is None:
-            raise AiolaStreamingError("Connection not established. Call connect() first.")
-
         if not isinstance(data, bytes):
             raise AiolaValidationError("Data must be bytes")
 
@@ -89,20 +82,31 @@ class StreamConnection:
         except Exception as exc:
             raise AiolaStreamingError("Failed to send audio data") from exc
 
+    def set_keywords(self, keywords: dict[str, str]) -> None:
+        """Send keywords list to the server."""
+        if not isinstance(keywords, dict):
+            raise AiolaValidationError("Keywords must be a dict")
+
+        if not all(isinstance(value, str) for value in keywords.values()):
+            raise AiolaValidationError("All keywords must be strings")
+
+        try:
+            self._sio.emit("set_keywords", keywords, namespace=self._namespace)
+        except Exception as exc:
+            raise AiolaStreamingError("Failed to send keywords") from exc
+
     def disconnect(self) -> None:
         """Disconnect the socket connection."""
-        if self._sio is not None:
+        if self._sio.connected:
             try:
                 self._sio.disconnect()
             except Exception as exc:
                 raise AiolaStreamingError("Failed to disconnect cleanly") from exc
-            finally:
-                self._sio = None
 
     @property
     def connected(self) -> bool:
         """Check if the connection is active."""
-        return self._sio is not None and self._sio.connected
+        return self._sio.connected
 
 
 class AsyncStreamConnection:
@@ -121,19 +125,18 @@ class AsyncStreamConnection:
         self._headers = headers
         self._socketio_path = socketio_path
         self._namespace = namespace
-        self._sio: socketio.AsyncClient | None = None
+        self._sio: socketio.AsyncClient = socketio.AsyncClient(
+            reconnection=True,
+            reconnection_attempts=3,
+            reconnection_delay=1,
+        )
 
     async def connect(self) -> None:
         """Establish the socket connection using stored parameters."""
-        if self._sio is not None and self._sio.connected:
+        if self._sio.connected:
             return  # Already connected
 
         try:
-            self._sio = socketio.AsyncClient(
-                reconnection=True,
-                reconnection_attempts=3,
-                reconnection_delay=1,
-            )
             await self._sio.connect(
                 url=self._url,
                 headers=self._headers,
@@ -147,9 +150,6 @@ class AsyncStreamConnection:
 
     def on(self, event: LiveEvents, handler: Callable[..., Any] | None = None) -> Callable[..., Any]:
         """Register an event handler."""
-        if self._sio is None:
-            raise AiolaStreamingError("Connection not established")
-
         if not isinstance(event, LiveEvents) or not event:
             raise AiolaValidationError("Event name must be a non-empty string")
 
@@ -176,9 +176,6 @@ class AsyncStreamConnection:
 
     async def send(self, data: bytes) -> None:
         """Send binary audio data."""
-        if self._sio is None:
-            raise AiolaStreamingError("Connection not established, call connect() first.")
-
         if not isinstance(data, bytes):
             raise AiolaValidationError("Data must be bytes")
 
@@ -187,17 +184,28 @@ class AsyncStreamConnection:
         except Exception as exc:
             raise AiolaStreamingError("Failed to send audio data") from exc
 
+    async def set_keywords(self, keywords: dict[str, str]) -> None:
+        """Send keywords list to the server."""
+        if not isinstance(keywords, dict):
+            raise AiolaValidationError("Keywords must be a dict")
+
+        if not all(isinstance(value, str) for value in keywords.values()):
+            raise AiolaValidationError("All keywords must be strings")
+
+        try:
+            await self._sio.emit("set_keywords", keywords, namespace=self._namespace)
+        except Exception as exc:
+            raise AiolaStreamingError("Failed to send keywords") from exc
+
     async def disconnect(self) -> None:
         """Disconnect the socket connection."""
-        if self._sio is not None:
+        if self._sio.connected:
             try:
                 await self._sio.disconnect()
             except Exception as exc:
-                raise AiolaStreamingError("Failed to disconnect cleanly") from exc
-            finally:
-                self._sio = None
+                raise AiolaStreamingError("Failed to disconnect") from exc
 
     @property
     def connected(self) -> bool:
         """Check if the connection is active."""
-        return self._sio is not None and self._sio.connected
+        return self._sio.connected
