@@ -1,24 +1,15 @@
 import os
-import pyaudio
+import pyaudio # pip install pyaudio for mic stream
 from aiola import AiolaClient
 from aiola.types import LiveEvents
 
 
 AIOLA_API_KEY = os.getenv("AIOLA_API_KEY")
 
-# Audio parameters
-FORMAT = pyaudio.paInt16  # 16-bit integers
-CHANNELS = 1  # Mono audio
-RATE = 16000  # Sample rate (samples per second)
-CHUNK = 4096  # Number of frames per buffer
-
-
-def main():
+def main():    
     client = AiolaClient(api_key=AIOLA_API_KEY)
 
     connection = client.stt.stream(lang_code="en")
-
-    connection.connect()
 
     @connection.on(LiveEvents.Transcript)
     def on_transcript(data):
@@ -32,25 +23,34 @@ def main():
     def on_disconnect():
         print("disconnected")
 
-    audio = pyaudio.PyAudio()
-    stream = audio.open(
-        format=FORMAT,
-        channels=CHANNELS,
-        rate=RATE,
-        input=True,
-        frames_per_buffer=CHUNK,
-    )
+    @connection.on(LiveEvents.Connect)
+    def on_connect():
+        print("Connected to streaming service")
+
+    connection.connect()
 
     try:
+        # Capture audio from microphone
+        audio = pyaudio.PyAudio()
+        stream = audio.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=16000,
+            input=True,
+            frames_per_buffer=4096,
+        )
+
+        # Send audio data to streaming service, wait until finished
         while True:
-            audio_data = stream.read(CHUNK)
+            audio_data = stream.read(4096)
             connection.send(audio_data)
     except KeyboardInterrupt:
-        pass
+        print("Stopping audio capture...")
     finally:
         stream.stop_stream()
         stream.close()
         audio.terminate()
+        connection.disconnect()
 
 
 if __name__ == "__main__":

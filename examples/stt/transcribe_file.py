@@ -6,7 +6,7 @@ AIOLA_API_KEY = os.getenv("AIOLA_API_KEY")
 def main():
     client = AiolaClient(api_key=AIOLA_API_KEY)
 
-    file_path = os.path.join(os.path.dirname(__file__), "audio.wav")
+    file_path = os.path.join(os.path.dirname(__file__), "..", "assets", "sample-en.wav")
     
     # Transcribe an audio file
     with open(file_path, "rb") as audio_file:

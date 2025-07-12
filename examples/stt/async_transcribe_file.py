@@ -9,14 +9,11 @@ async def main():
     client = AsyncAiolaClient(api_key=AIOLA_API_KEY)
 
     # Transcribe an audio file asynchronously
-    file_path = os.path.join(os.path.dirname(__file__), "audio.wav")
+    file_path = os.path.join(os.path.dirname(__file__), "..", "assets", "sample-en.wav")
     with open(file_path, "rb") as audio_file:
         result = await client.stt.transcribe_file(
             file=audio_file,
-            language="en",
-            keywords={
-                "aiola": "aiOla",
-            },
+            language="en"
         )
 
     print(result)
