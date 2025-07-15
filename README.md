@@ -5,9 +5,9 @@ The official Python SDK for the [aiOla](https://aiola.com) API, designed to work
 ## Installation
 
 ```bash
-pip install aiola-python
+pip install aiola
 # or
-uv add aiola-python
+uv add aiola
 ```
 
 ## Usage
