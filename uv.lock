@@ -14,6 +14,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "pyaudio" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-mock" },
@@ -29,6 +30,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "pyaudio", specifier = ">=0.2.14" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-asyncio", specifier = ">=1.0.0" },
     { name = "pytest-mock", specifier = ">=3.14.1" },

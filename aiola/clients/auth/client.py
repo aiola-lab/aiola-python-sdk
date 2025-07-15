@@ -9,7 +9,7 @@ import httpx
 
 from ...constants import DEFAULT_HEADERS, HTTP_TIMEOUT
 from ...errors import AiolaError
-from ...types import AiolaClientOptions
+from ...types import AiolaClientOptions, GrantTokenResponse, SessionCloseResponse
 
 
 class BaseAuthClient:
@@ -67,7 +67,7 @@ class BaseAuthClient:
             ) from error
 
     @staticmethod
-    def grant_token(api_key: str, auth_base_url: str, workflow_id: str) -> str:
+    def grant_token(api_key: str, auth_base_url: str, workflow_id: str) -> GrantTokenResponse:
         """
         Static method to generate an access token from an API key without creating an Auth instance.
         This is the recommended way to generate tokens in backend services.
@@ -127,7 +127,7 @@ class BaseAuthClient:
                 if not session_data.get("jwt"):
                     raise AiolaError(message="Invalid session response - no jwt found", code="INVALID_SESSION_RESPONSE")
 
-                return session_data["jwt"]
+                return {"accessToken": session_data["jwt"], "sessionId": session_data.get("sessionId", "")}
 
         except AiolaError:
             raise
@@ -137,7 +137,7 @@ class BaseAuthClient:
             ) from error
 
     @staticmethod
-    async def async_grant_token(api_key: str, auth_base_url: str, workflow_id: str) -> str:
+    async def async_grant_token(api_key: str, auth_base_url: str, workflow_id: str) -> GrantTokenResponse:
         """
         Static async method to generate an access token from an API key without creating an Auth instance.
         This is the recommended way to generate tokens in backend services.
@@ -193,13 +193,50 @@ class BaseAuthClient:
                 if not session_data.get("jwt"):
                     raise AiolaError(message="Invalid session response - no jwt found", code="INVALID_SESSION_RESPONSE")
 
-                return session_data["jwt"]
+                return {"accessToken": session_data["jwt"], "sessionId": session_data.get("sessionId", "")}
 
         except AiolaError:
             raise
         except Exception as error:
             raise AiolaError(
                 message=f"Token generation failed: {str(error)}", code="TOKEN_GENERATION_ERROR", details=error
+            ) from error
+
+    @staticmethod
+    async def async_close_session(access_token: str, auth_base_url: str) -> SessionCloseResponse:
+        """
+        Static async method to close a session and free up concurrency slots.
+        """
+        if not access_token:
+            raise AiolaError(message="Access token is required to close session", code="MISSING_ACCESS_TOKEN")
+
+        try:
+            auth_base_url = auth_base_url.rstrip("/")
+            session_endpoint = f"{auth_base_url}/voip-auth/session"
+
+            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+                response = await client.delete(
+                    session_endpoint,
+                    headers={
+                        **DEFAULT_HEADERS,
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {access_token}",
+                    },
+                )
+
+                if not response.is_success:
+                    raise AiolaError(
+                        message=f"Session close failed: {response.status_code}",
+                        status=response.status_code,
+                    )
+
+                return response.json()
+
+        except AiolaError:
+            raise
+        except Exception as error:
+            raise AiolaError(
+                message=f"Session close failed: {str(error)}", code="SESSION_CLOSE_ERROR", details=error
             ) from error
 
 
@@ -210,7 +247,7 @@ class AuthClient(BaseAuthClient):
         super().__init__(options)
 
     @staticmethod
-    def grant_token(api_key: str, auth_base_url: str, workflow_id: str) -> str:
+    def grant_token(api_key: str, auth_base_url: str, workflow_id: str) -> GrantTokenResponse:
         """
         Instance method to generate an access token from an API key.
         Delegates to the static method with the current base_url.
@@ -326,6 +363,115 @@ class AuthClient(BaseAuthClient):
             self.clear_session()
             raise
 
+    @staticmethod
+    def close_session(access_token: str, auth_base_url: str) -> SessionCloseResponse:
+        """
+        Static method to close a session and free up concurrency slots.
+        """
+        if not access_token:
+            raise AiolaError(message="Access token is required to close session", code="MISSING_ACCESS_TOKEN")
+
+        try:
+            auth_base_url = auth_base_url.rstrip("/")
+            session_endpoint = f"{auth_base_url}/voip-auth/session"
+
+            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+                response = client.delete(
+                    session_endpoint,
+                    headers={
+                        **DEFAULT_HEADERS,
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {access_token}",
+                    },
+                )
+
+                if not response.is_success:
+                    raise AiolaError(
+                        message=f"Session close failed: {response.status_code}",
+                        status=response.status_code,
+                    )
+
+                return response.json()
+
+        except AiolaError:
+            raise
+        except Exception as error:
+            raise AiolaError(
+                message=f"Session close failed: {str(error)}", code="SESSION_CLOSE_ERROR", details=error
+            ) from error
+
+    @staticmethod
+    def is_token_valid(access_token: str) -> bool:
+        """
+        Static method to check if an access token is valid and not expired.
+        """
+        try:
+            payload = AuthClient._parse_jwt_payload_static(access_token)
+            exp = payload.get("exp")
+            if exp is None:
+                return False
+
+            # Add 5 minute buffer before expiration
+            buffer_time = 5 * 60  # 5 minutes in seconds
+            current_time = int(time.time())
+            return exp > (current_time + buffer_time)
+        except Exception:
+            return False
+
+    @staticmethod
+    def parse_jwt_payload(token: str) -> dict[str, Any]:
+        """
+        Static method to parse JWT payload from token.
+        """
+        return AuthClient._parse_jwt_payload_static(token)
+
+    @staticmethod
+    def _parse_jwt_payload_static(token: str) -> dict[str, Any]:
+        """
+        Static helper method to parse JWT payload from token.
+        """
+        try:
+            # Split the token into parts
+            parts = token.split(".")
+            if len(parts) != 3:
+                raise AiolaError(message="Invalid JWT format", code="INVALID_TOKEN")
+
+            # Decode the payload (second part)
+            payload_part = parts[1]
+
+            # Add padding if needed for base64 decoding
+            padding = len(payload_part) % 4
+            if padding:
+                payload_part += "=" * (4 - padding)
+
+            # Decode from base64
+            payload_bytes = base64.urlsafe_b64decode(payload_part)
+            payload = json.loads(payload_bytes.decode("utf-8"))
+
+            return payload
+        except Exception as error:
+            raise AiolaError(
+                message=f"Failed to parse JWT token: {str(error)}", code="JWT_PARSE_ERROR", details=error
+            ) from error
+
+    def api_key_to_token(self, api_key: str) -> str:
+        """
+        Generate a temporary JWT token from API key.
+        """
+        return self._api_key_to_token(api_key)
+
+    def create_session(self, token: str, workflow_id: str) -> dict[str, str]:
+        """
+        Create an access token (session JWT) using the temporary token.
+        """
+        return self._create_session(token, workflow_id)
+
+    def is_session_valid(self, access_token: str) -> bool:
+        """
+        Check if the access token is valid and not expired.
+        """
+        return self._is_session_valid(access_token)
+
 
 class AsyncAuthClient(BaseAuthClient):
     """Async authentication client for managing API keys and access tokens."""
@@ -334,7 +480,7 @@ class AsyncAuthClient(BaseAuthClient):
         super().__init__(options)
 
     @staticmethod
-    async def grant_token(api_key: str, auth_base_url: str, workflow_id: str) -> str:
+    async def grant_token(api_key: str, auth_base_url: str, workflow_id: str) -> GrantTokenResponse:
         """
         Instance method to generate an access token from an API key.
         Delegates to the static async method with the current base_url.
@@ -448,3 +594,34 @@ class AsyncAuthClient(BaseAuthClient):
             # Clean up invalid cache entry
             self.clear_session()
             raise
+
+    async def api_key_to_token(self, api_key: str) -> str:
+        """
+        Generate a temporary JWT token from API key.
+        """
+        return await self._api_key_to_token(api_key)
+
+    async def create_session(self, token: str, workflow_id: str) -> dict[str, str]:
+        """
+        Create an access token (session JWT) using the temporary token.
+        """
+        return await self._create_session(token, workflow_id)
+
+    def is_session_valid(self, access_token: str) -> bool:
+        """
+        Check if the access token is valid and not expired.
+        """
+        return self._is_session_valid(access_token)
+
+    def parse_jwt_payload(self, token: str) -> dict[str, Any]:
+        """
+        Parse JWT payload from token.
+        """
+        return self._parse_jwt_payload(token)
+
+    @staticmethod
+    async def close_session(access_token: str, auth_base_url: str) -> SessionCloseResponse:
+        """
+        Static method to close a session and free up concurrency slots.
+        """
+        return await BaseAuthClient.async_close_session(access_token, auth_base_url)

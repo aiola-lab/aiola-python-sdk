@@ -1,22 +1,30 @@
 import os
 from aiola import AiolaClient
 
-AIOLA_API_KEY = os.getenv("AIOLA_API_KEY")
-
-def main():
-    client = AiolaClient(api_key=AIOLA_API_KEY)
-
-    file_path = os.path.join(os.path.dirname(__file__), "..", "assets", "sample-en.wav")
-    
-    # Transcribe an audio file
-    with open(file_path, "rb") as audio_file:
-        result = client.stt.transcribe_file(
-            file=audio_file,
-            language="en",
+def transcribe_file():
+    try:
+        # Step 1: Generate access token
+        result = AiolaClient.grant_token(
+            api_key=os.getenv('AIOLA_API_KEY')
         )
+        
+        # Step 2: Create client
+        client = AiolaClient(
+            access_token=result['accessToken']
+        )
+        
+        # Step 3: Transcribe file
+        file_path = os.path.join(os.path.dirname(__file__), "..", "assets", "sample-en.wav")
+        with open(file_path, "rb") as audio_file:
+            transcript = client.stt.transcribe_file(
+                file=audio_file,
+                language="en"
+            )
 
-    print(result)
-
+        print('Transcript:', transcript)
+        
+    except Exception as error:
+        print('Error transcribing file:', error)
 
 if __name__ == "__main__":
-    main() 
+    transcribe_file() 

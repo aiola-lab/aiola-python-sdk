@@ -17,7 +17,7 @@ dev = [
     "pytest-asyncio>=1.0.0",
     "pytest-mock>=3.14.1",
     "ruff>=0.4",
-    # "pyaudio>=0.2.14", # for audio processing, install when using mic-stream
+    "pyaudio>=0.2.14", # for audio processing, install when using mic-stream
 ]
 
 [tool.ruff]

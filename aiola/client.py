@@ -5,7 +5,7 @@ from .clients.stt.client import AsyncSttClient, SttClient
 from .clients.tts.client import AsyncTtsClient, TtsClient
 from .constants import DEFAULT_AUTH_BASE_URL, DEFAULT_BASE_URL, DEFAULT_WORKFLOW_ID
 from .errors import AiolaError, AiolaValidationError
-from .types import AiolaClientOptions
+from .types import AiolaClientOptions, GrantTokenResponse, SessionCloseResponse
 
 
 class AiolaClient:
@@ -72,9 +72,9 @@ class AiolaClient:
     @staticmethod
     def grant_token(
         api_key: str, auth_base_url: str = DEFAULT_AUTH_BASE_URL, workflow_id: str = DEFAULT_WORKFLOW_ID
-    ) -> str:
+    ) -> GrantTokenResponse:
         """
-        Generate an access token from an API.
+        Generate an access token from an API key.
         This is the recommended way to generate tokens in backend services.
 
         Args:
@@ -83,15 +83,36 @@ class AiolaClient:
             workflow_id: Optional workflow ID for the API
 
         Returns:
-            The generated access token
+            The generated access token and session ID
 
         Example:
             ```python
-            access_token = AiolaClient.grant_token('your-api-key')
-            client = AiolaClient(access_token=access_token)
+            result = AiolaClient.grant_token('your-api-key')
+            client = AiolaClient(access_token=result['accessToken'])
             ```
         """
         return AuthClient.grant_token(api_key=api_key, auth_base_url=auth_base_url, workflow_id=workflow_id)
+
+    @staticmethod
+    def close_session(access_token: str, auth_base_url: str = DEFAULT_AUTH_BASE_URL) -> SessionCloseResponse:
+        """
+        Close a session and free up concurrency slots.
+        This is useful for cleaning up resources when done with a session.
+
+        Args:
+            access_token: The access token to close the session for
+            auth_base_url: Optional base URL for the API
+
+        Returns:
+            The session close response
+
+        Example:
+            ```python
+            result = AiolaClient.close_session('your-access-token')
+            print(f"Session closed: {result['status']}")
+            ```
+        """
+        return AuthClient.close_session(access_token=access_token, auth_base_url=auth_base_url)
 
 
 class AsyncAiolaClient:
@@ -158,9 +179,9 @@ class AsyncAiolaClient:
     @staticmethod
     async def grant_token(
         api_key: str, auth_base_url: str = DEFAULT_AUTH_BASE_URL, workflow_id: str = DEFAULT_WORKFLOW_ID
-    ) -> str:
+    ) -> GrantTokenResponse:
         """
-        Generate an access token from an API key without instantiating a client.
+        Generate an access token from an API key.
         This is the recommended way to generate tokens in backend services.
 
         Args:
@@ -169,14 +190,35 @@ class AsyncAiolaClient:
             workflow_id: Optional workflow ID for the API
 
         Returns:
-            The generated access token
+            The generated access token and session ID
 
         Example:
             ```python
-            access_token = await AsyncAiolaClient.grant_token('your-api-key')
-            client = AsyncAiolaClient(access_token=access_token)
+            result = await AsyncAiolaClient.grant_token('your-api-key')
+            client = AsyncAiolaClient(access_token=result['accessToken'])
             ```
         """
         return await AsyncAuthClient.async_grant_token(
             api_key=api_key, auth_base_url=auth_base_url, workflow_id=workflow_id
         )
+
+    @staticmethod
+    async def close_session(access_token: str, auth_base_url: str = DEFAULT_AUTH_BASE_URL) -> SessionCloseResponse:
+        """
+        Close a session and free up concurrency slots.
+        This is useful for cleaning up resources when done with a session.
+
+        Args:
+            access_token: The access token to close the session for
+            auth_base_url: Optional base URL for the API
+
+        Returns:
+            The session close response
+
+        Example:
+            ```python
+            result = await AsyncAiolaClient.close_session('your-access-token')
+            print(f"Session closed: {result['status']}")
+            ```
+        """
+        return await AsyncAuthClient.close_session(access_token=access_token, auth_base_url=auth_base_url)

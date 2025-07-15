@@ -1,20 +1,38 @@
 import os
 from aiola import AiolaClient
-from io import BytesIO
 
-AIOLA_API_KEY = os.getenv("AIOLA_API_KEY")
+def stream_tts():
+    try:
+        # Step 1: Generate access token
+        result = AiolaClient.grant_token(
+            api_key=os.getenv('AIOLA_API_KEY')
+        )
+        
+        # Step 2: Create client
+        client = AiolaClient(
+            access_token=result['accessToken']
+        )
+        
+        print(f"Session ID: {result['sessionId']}")
+        
+        # Step 3: Stream audio
+        stream = client.tts.stream(
+            text='Hello, how can I help you today?',
+            voice='jess',
+            language='en'
+        )
 
-
-def main():
-    client = AiolaClient(api_key=AIOLA_API_KEY)
-
-    response = client.tts.stream(text="Hello, world!", voice="jess", language="en")
-
-    audio = BytesIO()
-
-    for chunk in response:
-        audio.write(chunk)
-
+        audio_chunks = []
+        for chunk in stream:
+            audio_chunks.append(chunk)
+        
+        print('Audio chunks received:', len(audio_chunks))
+        
+        # Clean up session
+        AiolaClient.close_session(result['accessToken'])
+        
+    except Exception as error:
+        print('Error streaming TTS:', error)
 
 if __name__ == "__main__":
-    main()
+    stream_tts()

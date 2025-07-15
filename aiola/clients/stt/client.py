@@ -53,14 +53,16 @@ class _BaseStt:
 
         query = {
             "execution_id": execution_id,
+            "flow_id": workflow_id or DEFAULT_WORKFLOW_ID,
+            "lang_code": lang_code or "en",
+            "time_zone": time_zone or "UTC",
+            "keywords": json.dumps(keywords or {}),
+            "tasks_config": json.dumps(tasks_config or {}),
             "x-aiola-api-token": access_token,
         }
 
         headers = {
-            "X-Execution-Id": execution_id,
-            "X-Workflow-Id": workflow_id or DEFAULT_WORKFLOW_ID,
-            "x-lang-code": lang_code or "en",
-            "x-time-zone": time_zone or "UTC",
+            "Authorization": f"Bearer {access_token}",
         }
 
         return query, headers

@@ -83,6 +83,20 @@ class TranscriptionResponse(TypedDict):
     metadata: TranscriptionMetadata
 
 
+class SessionCloseResponse(TypedDict):
+    """Response from session close API."""
+
+    status: str
+    deletedAt: str
+
+
+class GrantTokenResponse(TypedDict):
+    """Response from grant token API."""
+
+    accessToken: str
+    sessionId: str
+
+
 class TranslationPayload(TypedDict):
     src_lang_code: str
     dst_lang_code: str

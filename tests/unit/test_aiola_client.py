@@ -3,6 +3,7 @@ import pytest
 
 from aiola import AiolaClient, AsyncAiolaClient
 from aiola.clients.auth.client import AuthClient, AsyncAuthClient
+from aiola.constants import DEFAULT_AUTH_BASE_URL, DEFAULT_WORKFLOW_ID
 from aiola.errors import AiolaValidationError
 
 
@@ -118,22 +119,22 @@ def test_aiola_client_constructor_invalid_base_url():
 def test_aiola_client_static_grant_token():
     """Test AiolaClient static grant_token method."""
     with patch.object(AuthClient, 'grant_token') as mock_grant:
-        mock_grant.return_value = "test-access-token"
+        mock_grant.return_value = {"accessToken": "test-access-token", "sessionId": "session_789"}
         
         result = AiolaClient.grant_token("test-api-key")
         
-        assert result == "test-access-token"
+        assert result == {"accessToken": "test-access-token", "sessionId": "session_789"}
         mock_grant.assert_called_once_with(
             api_key="test-api-key", 
-            auth_base_url="https://dev-vp1-uw2-auth.internal.aiola.ai", 
-            workflow_id="9e153c70-288b-47a5-97a7-1f91273c2420"
+            auth_base_url=DEFAULT_AUTH_BASE_URL, 
+            workflow_id=DEFAULT_WORKFLOW_ID
         )
 
 
 def test_aiola_client_static_grant_token_with_options():
     """Test AiolaClient static grant_token method with options."""
     with patch.object(AuthClient, 'grant_token') as mock_grant:
-        mock_grant.return_value = "test-access-token"
+        mock_grant.return_value = {"accessToken": "test-access-token", "sessionId": "session_789"}
         
         result = AiolaClient.grant_token(
             "test-api-key", 
@@ -141,7 +142,7 @@ def test_aiola_client_static_grant_token_with_options():
             workflow_id="custom-workflow"
         )
         
-        assert result == "test-access-token"
+        assert result == {"accessToken": "test-access-token", "sessionId": "session_789"}
         mock_grant.assert_called_once_with(
             api_key="test-api-key", 
             auth_base_url="https://custom.api.com", 
@@ -194,15 +195,15 @@ def test_async_aiola_client_constructor_no_credentials():
 async def test_async_aiola_client_static_grant_token():
     """Test AsyncAiolaClient static grant_token method."""
     with patch.object(AsyncAuthClient, 'async_grant_token') as mock_grant:
-        mock_grant.return_value = "test-access-token"
+        mock_grant.return_value = {"accessToken": "test-access-token", "sessionId": "session_789"}
         
         result = await AsyncAiolaClient.grant_token("test-api-key")
         
-        assert result == "test-access-token"
+        assert result == {"accessToken": "test-access-token", "sessionId": "session_789"}
         mock_grant.assert_called_once_with(
             api_key="test-api-key", 
-            auth_base_url="https://dev-vp1-uw2-auth.internal.aiola.ai", 
-            workflow_id="9e153c70-288b-47a5-97a7-1f91273c2420"
+            auth_base_url=DEFAULT_AUTH_BASE_URL, 
+            workflow_id=DEFAULT_WORKFLOW_ID
         )
 
 
@@ -210,7 +211,7 @@ async def test_async_aiola_client_static_grant_token():
 async def test_async_aiola_client_static_grant_token_with_options():
     """Test AsyncAiolaClient static grant_token method with options."""
     with patch.object(AsyncAuthClient, 'async_grant_token') as mock_grant:
-        mock_grant.return_value = "test-access-token"
+        mock_grant.return_value = {"accessToken": "test-access-token", "sessionId": "session_789"}
         
         result = await AsyncAiolaClient.grant_token(
             "test-api-key", 
@@ -218,7 +219,7 @@ async def test_async_aiola_client_static_grant_token_with_options():
             workflow_id="custom-workflow"
         )
         
-        assert result == "test-access-token"
+        assert result == {"accessToken": "test-access-token", "sessionId": "session_789"}
         mock_grant.assert_called_once_with(
             api_key="test-api-key", 
             auth_base_url="https://custom.api.com", 
