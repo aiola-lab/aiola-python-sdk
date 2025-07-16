@@ -76,7 +76,7 @@ class StreamConnection:
         """Send binary audio data."""
         if not self.connected:
             raise AiolaError("Connection not established")
-            
+
         if not isinstance(data, bytes):
             raise AiolaValidationError("Data must be bytes")
 
@@ -146,7 +146,7 @@ class AsyncStreamConnection:
                 socketio_path=self._socketio_path,
                 namespaces=[self._namespace],
                 wait=True,
-                transports=[""websocket"],
+                transports=["polling", "websocket"],
             )
         except Exception as exc:
             raise AiolaStreamingError("Failed to connect to Streaming service") from exc
@@ -181,7 +181,7 @@ class AsyncStreamConnection:
         """Send binary audio data."""
         if not self.connected:
             raise AiolaError("Connection not established")
-            
+
         if not isinstance(data, bytes):
             raise AiolaValidationError("Data must be bytes")
 
