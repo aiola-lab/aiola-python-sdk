@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-import threading
 import queue
-from typing import Optional, Callable, Any, TYPE_CHECKING
+import threading
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 try:
-    import sounddevice as sd
     import numpy as np
+    import sounddevice as sd
 except ImportError:
     sd = None
     np = None
 
 if TYPE_CHECKING:
-    import sounddevice as sd
     import numpy as np
+    import sounddevice as sd
 
 
 class MicrophoneStream:
@@ -28,7 +29,7 @@ class MicrophoneStream:
         samplerate: int = 16000,
         blocksize: int = 4096,
         dtype: str = "int16",
-        device: Optional[int] = None,
+        device: int | None = None,
     ):
         """
         Initialize the microphone stream.
@@ -52,12 +53,12 @@ class MicrophoneStream:
         self.dtype = dtype
         self.device = device
 
-        self._stream: Optional[Any] = None
+        self._stream: Any | None = None
         self._is_recording = False
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._audio_queue: queue.Queue[bytes] = queue.Queue()
-        self._on_audio_callback: Optional[Callable[[bytes], None]] = None
-        self._on_error_callback: Optional[Callable[[Exception], None]] = None
+        self._on_audio_callback: Callable[[bytes], None] | None = None
+        self._on_error_callback: Callable[[Exception], None] | None = None
 
     def __enter__(self):
         """Context manager entry."""
@@ -70,10 +71,9 @@ class MicrophoneStream:
 
     def _audio_callback(self, indata: Any, frames: int, time: Any, status: Any) -> None:
         """Internal callback for sounddevice stream."""
-        if status:
-            if self._on_error_callback:
-                self._on_error_callback(Exception(f"Audio callback status: {status}"))
-        
+        if status and self._on_error_callback:
+            self._on_error_callback(Exception(f"Audio callback status: {status}"))
+
         # Convert numpy array to bytes
         audio_bytes = indata.astype(self.dtype).tobytes()
         self._audio_queue.put(audio_bytes)
@@ -116,7 +116,7 @@ class MicrophoneStream:
             except queue.Empty:
                 break
 
-    def read(self, timeout: Optional[float] = None) -> bytes:
+    def read(self, timeout: float | None = None) -> bytes:
         """
         Read audio data from the microphone.
 
@@ -138,7 +138,7 @@ class MicrophoneStream:
     def stream_to(
         self,
         connection: Any,
-        on_error: Optional[Callable[[Exception], None]] = None,
+        on_error: Callable[[Exception], None] | None = None,
     ) -> None:
         """
         Stream audio data to a connection (e.g., STT streaming connection).
@@ -180,7 +180,7 @@ class MicrophoneStream:
     def stream_with_callback(
         self,
         callback: Callable[[bytes], None],
-        on_error: Optional[Callable[[Exception], None]] = None,
+        on_error: Callable[[Exception], None] | None = None,
     ) -> None:
         """
         Stream audio data to a callback function.
@@ -236,21 +236,22 @@ class MicrophoneStream:
         """
         if sd is None:
             raise ImportError(
-                "sounddevice is required for microphone functionality. "
-                "Install it with: pip install 'aiola[mic]'"
+                "sounddevice is required for microphone functionality. Install it with: pip install 'aiola[mic]'"
             )
 
         devices = []
         device_list = sd.query_devices()
-        
+
         for i, device_info in enumerate(device_list):
             if device_info["max_input_channels"] > 0:
-                devices.append({
-                    "index": i,
-                    "name": device_info["name"],
-                    "channels": device_info["max_input_channels"],
-                    "sample_rate": device_info["default_samplerate"],
-                    "hostapi": device_info["hostapi"],
-                })
+                devices.append(
+                    {
+                        "index": i,
+                        "name": device_info["name"],
+                        "channels": device_info["max_input_channels"],
+                        "sample_rate": device_info["default_samplerate"],
+                        "hostapi": device_info["hostapi"],
+                    }
+                )
 
         return devices

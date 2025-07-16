@@ -74,6 +74,9 @@ class StreamConnection:
 
     def send(self, data: bytes) -> None:
         """Send binary audio data."""
+        if not self.connected:
+            raise AiolaError("Connection not established")
+            
         if not isinstance(data, bytes):
             raise AiolaValidationError("Data must be bytes")
 
@@ -176,6 +179,9 @@ class AsyncStreamConnection:
 
     async def send(self, data: bytes) -> None:
         """Send binary audio data."""
+        if not self.connected:
+            raise AiolaError("Connection not established")
+            
         if not isinstance(data, bytes):
             raise AiolaValidationError("Data must be bytes")
 

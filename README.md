@@ -71,7 +71,7 @@ def example():
         )
         
         # Step 3: Use client for API calls
-        with open('./audio.wav', 'rb') as audio_file:
+        with open('path/to/your/audio.wav', 'rb') as audio_file:
             transcript = client.stt.transcribe_file(
                 file=audio_file,
                 language='en'
