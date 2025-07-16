@@ -13,8 +13,6 @@ def stream_tts():
             access_token=result['accessToken']
         )
         
-        print(f"Session ID: {result['sessionId']}")
-        
         # Step 3: Stream audio
         stream = client.tts.stream(
             text='Hello, how can I help you today?',
@@ -27,9 +25,6 @@ def stream_tts():
             audio_chunks.append(chunk)
         
         print('Audio chunks received:', len(audio_chunks))
-        
-        # Clean up session
-        AiolaClient.close_session(result['accessToken'])
         
     except Exception as error:
         print('Error streaming TTS:', error)

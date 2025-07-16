@@ -1,14 +1,19 @@
 [project]
 name = "aiola"
-version = "0.0.0.dev"
+version = "0.0.1"
 description = "aiOla python sdk"
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
 dependencies = [
     "httpx>=0.27",
- "pyaudio>=0.2.14",
- "python-socketio[client]>=5.11",
+    "python-socketio[client]>=5.11",
+]
+
+[project.optional-dependencies]
+mic = [
+    "sounddevice>=0.4.6",
+    "numpy>=1.21.0",
 ]
 
 [dependency-groups]
@@ -17,7 +22,8 @@ dev = [
     "pytest-asyncio>=1.0.0",
     "pytest-mock>=3.14.1",
     "ruff>=0.4",
-    "pyaudio>=0.2.14", # for audio processing, install when using mic-stream
+    "sounddevice>=0.4.6",
+    "numpy>=1.21.0",
 ]
 
 [tool.ruff]

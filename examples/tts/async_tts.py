@@ -14,8 +14,6 @@ async def create_audio_file():
             access_token=result['accessToken']
         )
         
-        print(f"Session ID: {result['sessionId']}")
-        
         # Step 3: Generate audio
         audio = client.tts.synthesize(
             text='Hello, how can I help you today?',
@@ -31,9 +29,6 @@ async def create_audio_file():
         
         print('Audio file created successfully')
         print(f"✅ Audio file saved: {file_path}")
-        
-        # Clean up session
-        await AsyncAiolaClient.close_session(result['accessToken'])
         
     except Exception as error:
         print('Error creating audio file:', error)
@@ -62,9 +57,6 @@ async def stream_tts():
             audio_chunks.append(chunk)
         
         print('Audio chunks received:', len(audio_chunks))
-        
-        # Clean up session
-        await AsyncAiolaClient.close_session(result['accessToken'])
         
     except Exception as error:
         print('Error streaming TTS:', error)

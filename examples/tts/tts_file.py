@@ -13,8 +13,6 @@ def create_file():
             access_token=result['accessToken']
         )
         
-        print(f"Session ID: {result['sessionId']}")
-        
         # Step 3: Generate audio
         audio = client.tts.synthesize(
             text='Hello, how can I help you today?',
@@ -30,9 +28,6 @@ def create_file():
         
         print('Audio file created successfully')
         print(f"✅ Audio file saved: {output_path}")
-        
-        # Clean up session
-        AiolaClient.close_session(result['accessToken'])
         
     except Exception as error:
         print('Error creating audio file:', error)

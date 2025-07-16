@@ -12,11 +12,13 @@ from .errors import (
     AiolaStreamingError,
     AiolaValidationError,
 )
+from .mic import MicrophoneStream
 
 __all__ = [
     "AiolaClient",
     "AsyncAiolaClient",
     "TasksConfig",
+    "MicrophoneStream",
     "AiolaError",
     "AiolaAuthenticationError",
     "AiolaConnectionError",

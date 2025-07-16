@@ -4,10 +4,22 @@ The official Python SDK for the [aiOla](https://aiola.com) API, designed to work
 
 ## Installation
 
+### Basic Installation
+
 ```bash
 pip install aiola
 # or
 uv add aiola
+```
+
+### With Microphone Support
+
+For microphone streaming functionality, install with the mic extra:
+
+```bash
+pip install 'aiola[mic]'
+# or
+uv add 'aiola[mic]'
 ```
 
 ## Usage
@@ -73,30 +85,11 @@ def example():
 example()
 ```
 
-#### Error Handling
-
-The SDK automatically handles common scenarios like concurrency limits:
-
-```python
-from aiola import AiolaClient, AiolaError
-
-try:
-    result = AiolaClient.grant_token(
-        api_key='your-api-key'
-    )
-except AiolaError as error:
-    print(f'Authentication error: {error.message}')
-    if error.code:
-        print(f'Error code: {error.code}')
-except Exception as error:
-    print(f'Unexpected error: {error}')
-```
-
 #### Session Management
 
-**Close Session on Server:**
+**Close Session:**
 ```python
-# Terminates the session on the server
+# Terminates the session
 result = AiolaClient.close_session(access_token)
 print(f"Session closed at: {result['deletedAt']}")
 ```
@@ -151,8 +144,7 @@ transcribe_file()
 
 ```python
 import os
-import pyaudio # pip install pyaudio for mic stream
-from aiola import AiolaClient
+from aiola import AiolaClient, MicrophoneStream
 from aiola.types import LiveEvents
 
 def live_streaming():
@@ -191,26 +183,26 @@ def live_streaming():
         connection.connect()
 
         try:
-            # Capture audio from microphone
-            audio = pyaudio.PyAudio()
-            stream = audio.open(
-                format=pyaudio.paInt16,
+            # Capture audio from microphone using the SDK's MicrophoneStream
+            with MicrophoneStream(
                 channels=1,
-                rate=16000,
-                input=True,
-                frames_per_buffer=4096,
-            )
-
-            while True:
-                audio_data = stream.read(4096)
-                connection.send(audio_data)
+                samplerate=16000,
+                blocksize=4096,
+            ) as mic:
+                mic.stream_to(connection)
+                
+                # Keep the main thread alive
+                while True:
+                    try:
+                        import time
+                        time.sleep(0.1)
+                    except KeyboardInterrupt:
+                        print('Keyboard interrupt')
+                        break
                 
         except KeyboardInterrupt:
             print('Keyboard interrupt')
         finally:
-            stream.stop_stream()
-            stream.close()
-            audio.terminate()
             connection.disconnect()
         
     except Exception as error:
@@ -406,7 +398,7 @@ asyncio.run(stream_tts())
 ## Requirements
 
 - Python 3.10+
-- For microphone streaming examples: `pyaudio` (install separately)
+- For microphone streaming functionality: Install with `pip install 'aiola[mic]'`
 
 ## Examples
 

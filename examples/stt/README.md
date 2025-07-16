@@ -2,13 +2,34 @@
 
 This directory contains examples demonstrating how to use the aiOla SDK for speech-to-text functionality.
 
+## Installation
+
+For microphone streaming functionality, install the SDK with the mic extra:
+
+```bash
+pip install 'aiola[mic]'
+```
+
+With uv:
+```bash
+uv add 'aiola[mic]'
+# or for development
+uv sync --group dev  # includes mic dependencies
+```
+
+Or if you prefer to use your own microphone implementation:
+
+```bash
+pip install 'aiola[mic]'
+```
+
 ## Quick start
 
 <!--snippet;stt;quickstart-->
 ```python
 import os
-import pyaudio # pip install pyaudio for mic stream
-from aiola import AiolaClient
+# pip install 'aiola[mic]'
+from aiola import AiolaClient, MicrophoneStream
 from aiola.types import LiveEvents
 
 def live_streaming():
@@ -47,26 +68,26 @@ def live_streaming():
         connection.connect()
 
         try:
-            # Capture audio from microphone
-            audio = pyaudio.PyAudio()
-            stream = audio.open(
-                format=pyaudio.paInt16,
+            # Capture audio from microphone using the SDK's MicrophoneStream
+            with MicrophoneStream(
                 channels=1,
-                rate=16000,
-                input=True,
-                frames_per_buffer=4096,
-            )
-
-            while True:
-                audio_data = stream.read(4096)
-                connection.send(audio_data)
+                samplerate=16000,
+                blocksize=4096,
+            ) as mic:
+                mic.stream_to(connection)
+                
+                # Keep the main thread alive
+                while True:
+                    try:
+                        import time
+                        time.sleep(0.1)
+                    except KeyboardInterrupt:
+                        print('Keyboard interrupt')
+                        break
                 
         except KeyboardInterrupt:
             print('Keyboard interrupt')
         finally:
-            stream.stop_stream()
-            stream.close()
-            audio.terminate()
             connection.disconnect()
         
     except Exception as error:
@@ -75,3 +96,14 @@ def live_streaming():
 if __name__ == "__main__":
     live_streaming()
 ```
+
+## Alternative: Using Custom Microphone Implementation
+
+If you prefer to use your own microphone implementation (e.g., with pyaudio), you can install the basic SDK and handle audio capture yourself:
+
+```bash
+pip install aiola
+pip install pyaudio  # or your preferred audio library
+```
+
+See [mic_stream_custom.py](mic_stream_custom.py) for an example of using pyaudio directly with the aiOla SDK.

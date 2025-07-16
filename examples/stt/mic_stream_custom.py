@@ -1,8 +1,13 @@
 import os
-from aiola import AiolaClient, MicrophoneStream
+import pyaudio  # pip install pyaudio for mic stream
+from aiola import AiolaClient
 from aiola.types import LiveEvents
 
-def live_streaming():
+def live_streaming_with_custom_mic():
+    """
+    Example showing how to use the aiOla SDK with a custom microphone implementation.
+    This is useful if you prefer to use pyaudio or another audio library directly.
+    """
     try:
         # Step 1: Generate access token, save it
         result = AiolaClient.grant_token(
@@ -38,30 +43,30 @@ def live_streaming():
         connection.connect()
 
         try:
-            # Capture audio from microphone using the SDK's MicrophoneStream
-            with MicrophoneStream(
+            # Custom microphone implementation using pyaudio
+            audio = pyaudio.PyAudio()
+            stream = audio.open(
+                format=pyaudio.paInt16,
                 channels=1,
-                samplerate=16000,
-                blocksize=4096,
-            ) as mic:
-                mic.stream_to(connection)
-                
-                # Keep the main thread alive
-                while True:
-                    try:
-                        import time
-                        time.sleep(0.1)
-                    except KeyboardInterrupt:
-                        print('Keyboard interrupt')
-                        break
+                rate=16000,
+                input=True,
+                frames_per_buffer=4096,
+            )
+
+            while True:
+                audio_data = stream.read(4096)
+                connection.send(audio_data)
                 
         except KeyboardInterrupt:
             print('Keyboard interrupt')
         finally:
+            stream.stop_stream()
+            stream.close()
+            audio.terminate()
             connection.disconnect()
         
     except Exception as error:
         print('Error:', error)
 
 if __name__ == "__main__":
-    live_streaming()
+    live_streaming_with_custom_mic()
