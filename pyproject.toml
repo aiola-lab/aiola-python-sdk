@@ -1,14 +1,39 @@
 [project]
 name = "aiola"
 version = "0.0.1"
-description = "aiOla python sdk"
+description = "The official Python SDK for aiOla API - Speech-to-Text and Text-to-Speech"
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
+authors = [
+    {name = "aiOla", email = "support@aiola.ai"},
+]
+maintainers = [
+    {name = "aiOla", email = "support@aiola.ai"},
+]
+keywords = ["speech", "stt", "tts", "speech-to-text", "text-to-speech", "audio", "microphone", "aiola"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
 dependencies = [
     "httpx>=0.27",
     "python-socketio[client]>=5.11",
 ]
+
+[project.urls]
+Homepage = "https://aiola.ai"
+Repository = "https://github.com/aiola-lab/aiola-python-sdk"
+"Bug Tracker" = "https://github.com/aiola-lab/aiola-python-sdk/issues"
 
 [project.optional-dependencies]
 mic = [
