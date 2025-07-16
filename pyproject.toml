@@ -37,8 +37,8 @@ Repository = "https://github.com/aiola-lab/aiola-python-sdk"
 
 [project.optional-dependencies]
 mic = [
-    "sounddevice>=0.4.6",
-    "numpy>=1.21.0",
+    "sounddevice>=0.5.2",
+    "numpy>=2.2.6",
 ]
 
 [dependency-groups]
@@ -47,8 +47,8 @@ dev = [
     "pytest-asyncio>=1.0.0",
     "pytest-mock>=3.14.1",
     "ruff>=0.4",
-    "sounddevice>=0.4.6",
-    "numpy>=1.21.0",
+    "numpy>=2.2.6",
+    "sounddevice>=0.5.2",
 ]
 
 [tool.ruff]

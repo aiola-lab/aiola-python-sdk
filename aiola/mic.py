@@ -8,7 +8,9 @@ from typing import TYPE_CHECKING, Any
 try:
     import numpy as np
     import sounddevice as sd
-except ImportError:
+except (ImportError, OSError):
+    # ImportError: sounddevice/numpy not installed
+    # OSError: PortAudio library not found (common in CI environments)
     sd = None
     np = None
 
@@ -44,7 +46,8 @@ class MicrophoneStream:
         if sd is None or np is None:
             raise ImportError(
                 "sounddevice and numpy are required for microphone functionality. "
-                "Install them with: pip install 'aiola[mic]'"
+                "Install them with: pip install 'aiola[mic]'\n"
+                "Note: This also requires system PortAudio libraries."
             )
 
         self.channels = channels
@@ -236,7 +239,9 @@ class MicrophoneStream:
         """
         if sd is None:
             raise ImportError(
-                "sounddevice is required for microphone functionality. Install it with: pip install 'aiola[mic]'"
+                "sounddevice is required for microphone functionality. "
+                "Install it with: pip install 'aiola[mic]'\n"
+                "Note: This also requires system PortAudio libraries."
             )
 
         devices = []

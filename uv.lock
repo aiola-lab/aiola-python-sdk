@@ -36,20 +36,20 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "httpx", specifier = ">=0.27" },
-    { name = "numpy", marker = "extra == 'mic'", specifier = ">=1.21.0" },
+    { name = "numpy", marker = "extra == 'mic'", specifier = ">=2.2.6" },
     { name = "python-socketio", extras = ["client"], specifier = ">=5.11" },
-    { name = "sounddevice", marker = "extra == 'mic'", specifier = ">=0.4.6" },
+    { name = "sounddevice", marker = "extra == 'mic'", specifier = ">=0.5.2" },
 ]
 provides-extras = ["mic"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "numpy", specifier = ">=1.21.0" },
+    { name = "numpy", specifier = ">=2.2.6" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-asyncio", specifier = ">=1.0.0" },
     { name = "pytest-mock", specifier = ">=3.14.1" },
     { name = "ruff", specifier = ">=0.4" },
-    { name = "sounddevice", specifier = ">=0.4.6" },
+    { name = "sounddevice", specifier = ">=0.5.2" },
 ]
 
 [[package]]
