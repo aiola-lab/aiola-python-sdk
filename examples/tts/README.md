@@ -9,12 +9,16 @@ This directory contains examples demonstrating how to use the aiOla SDK for text
 import os
 from aiola import AiolaClient
 
-client = AiolaClient(
-    api_key='YOUR_API_KEY'
-)
-
 def synthesize_to_file():
     try:
+        # Step 1: Generate access token
+        result = AiolaClient.grant_token(
+            api_key=os.getenv("AIOLA_API_KEY") or "YOUR_API_KEY"
+        )
+        
+        # Step 2: Create client
+        client = AiolaClient(access_token=result["accessToken"])
+        
         audio_stream = client.tts.synthesize(
             text="Hello, how can I help you today?",
             voice="jess",
@@ -30,26 +34,8 @@ def synthesize_to_file():
     except Exception as error:
         print("Error saving file:", error)
 
-def stream_tts():
-    try:
-        stream = client.tts.stream(
-            text="Hello, this is a streaming example of text-to-speech synthesis.",
-            voice="jess",
-            language="en"
-        )
-        
-        # Collect audio chunks
-        audio_chunks = []
-        for chunk in stream:
-            audio_chunks.append(chunk)
-        
-        # Process chunks as needed (e.g., play audio, save to buffer, etc.)
-        print(f"Audio chunks received: {len(audio_chunks)}")
-    except Exception as error:
-        print("Error streaming TTS:", error)
-
-synthesize_to_file()
-stream_tts()
+if __name__ == "__main__":
+    synthesize_to_file()
 ```
 
 ## Available Examples
