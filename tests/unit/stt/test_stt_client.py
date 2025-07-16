@@ -419,12 +419,12 @@ def test_stream_connection_wrapper_functionality(patch_dummy_socket):
     assert isinstance(connection, StreamConnection)
     assert connection.connected is False
 
-    # Should raise error when trying to use methods before connecting
-    with pytest.raises(AiolaError, match="Connection not established"):
-        @connection.on(LiveEvents.Transcript)
-        def on_transcript(data):
-            return data
+    # Should be able to register event handlers before connecting
+    @connection.on(LiveEvents.Transcript)
+    def on_transcript(data):
+        return data
 
+    # But should raise error when trying to send data before connecting
     with pytest.raises(AiolaError, match="Connection not established"):
         connection.send(b"test_audio")
 
@@ -931,12 +931,12 @@ async def test_async_stream_connection_wrapper_functionality(patch_dummy_async_s
     assert isinstance(connection, AsyncStreamConnection)
     assert connection.connected is False
 
-    # Should raise error when trying to use methods before connecting
-    with pytest.raises(AiolaError, match="Connection not established"):
-        @connection.on(LiveEvents.Transcript)
-        def on_transcript(data):
-            return data
+    # Should be able to register event handlers before connecting
+    @connection.on(LiveEvents.Transcript)
+    def on_transcript(data):
+        return data
 
+    # But should raise error when trying to send data before connecting
     with pytest.raises(AiolaError, match="Connection not established"):
         await connection.send(b"test_audio")
 
