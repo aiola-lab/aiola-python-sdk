@@ -49,6 +49,10 @@ dev = [
     "ruff>=0.4",
     "numpy>=2.2.6",
     "sounddevice>=0.5.2",
+    "aiola[mic]",
+    "twine>=6.1.0",
+    "python-semantic-release>=8.0.0",
+    "build>=1.0.0",
 ]
 
 [tool.ruff]
@@ -76,6 +80,9 @@ python_files = ["test_*.py"]
 [tool.coverage.run]
 source = ["aiola"]
 
+[tool.uv.sources]
+aiola = { workspace = true }
+
 [tool.ruff.lint]
 select = [
     # pycodestyle
@@ -94,4 +101,32 @@ select = [
 ignore = [
     # Use `X | Y` for type annotations
     "UP007",
+]
+
+[tool.semantic_release]
+version_variable = [
+    "pyproject.toml:project.version"
+]
+version_toml = ["pyproject.toml"]
+dist_path = "dist/"
+upload_to_pypi = true
+upload_to_release = true
+build_command = "uv run python -m build"
+version_source = "tag"
+commit_version_number = true
+commit_subject = "chore(release): {version} [skip ci]"
+commit_message = "chore(release): {version} [skip ci]\n\n{changelog}"
+commit_parser = "conventional"
+changelog_file = "CHANGELOG.md"
+changelog_components = [
+    "feat",
+    "fix", 
+    "docs",
+    "style",
+    "refactor",
+    "perf",
+    "test",
+    "build",
+    "ci",
+    "chore"
 ]
