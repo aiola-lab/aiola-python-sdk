@@ -42,7 +42,7 @@ jobs:
 
       - name: Semantic Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_ACTIONS_PTA }}
+          GITHUB_TOKEN: ${{ github.token }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
           uv run semantic-release publish
