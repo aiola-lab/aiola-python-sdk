@@ -1,5 +1,6 @@
 # aiOla Python SDK
 
+
 The official Python SDK for the [aiOla](https://aiola.com) API, designed to work seamlessly in both synchronous and asynchronous environments.
 
 ## Installation
