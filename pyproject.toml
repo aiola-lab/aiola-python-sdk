@@ -112,7 +112,7 @@ dist_path = "dist/"
 upload_to_pypi = true
 upload_to_release = true
 build_command = "uv run python -m build"
-version_source = "tag"
+version_source = "pyproject.toml"
 commit_version_number = true
 commit_subject = "chore(release): {version} [skip ci]"
 commit_message = "chore(release): {version} [skip ci]\n\n{changelog}"
@@ -130,3 +130,7 @@ changelog_components = [
     "ci",
     "chore"
 ]
+# Handle initial release when no tags exist
+first_release = true
+# Configure release branches
+branches = { "main" = {}, "rc" = { "prerelease" = true } }
