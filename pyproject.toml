@@ -1,0 +1,132 @@
+[project]
+name = "aiola"
+version = "0.1.1"
+description = "The official Python SDK for aiOla API - Speech-to-Text and Text-to-Speech"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+authors = [
+    {name = "aiOla", email = "support@aiola.ai"},
+]
+maintainers = [
+    {name = "aiOla", email = "support@aiola.ai"},
+]
+keywords = ["speech", "stt", "tts", "speech-to-text", "text-to-speech", "audio", "microphone", "aiola"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "httpx>=0.27",
+    "python-socketio[client]>=5.11",
+]
+
+[project.urls]
+Homepage = "https://aiola.ai"
+Repository = "https://github.com/aiola-lab/aiola-python-sdk"
+"Bug Tracker" = "https://github.com/aiola-lab/aiola-python-sdk/issues"
+
+[project.optional-dependencies]
+mic = [
+    "sounddevice>=0.5.2",
+    "numpy>=2.2.6",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=1.0.0",
+    "pytest-mock>=3.14.1",
+    "ruff>=0.4",
+    "numpy>=2.2.6",
+    "sounddevice>=0.5.2",
+    "aiola[mic]",
+    "twine>=6.1.0",
+    "python-semantic-release>=8.0.0",
+    "build>=1.0.0",
+]
+
+[tool.ruff]
+line-length = 120
+exclude = [".venv", "dist", "build", "tests", "examples"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[tool.hatch.build.targets.sdist]
+include = ["aiola"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["aiola"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.coverage.run]
+source = ["aiola"]
+
+[tool.uv.sources]
+aiola = { workspace = true }
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
+ignore = [
+    # Use `X | Y` for type annotations
+    "UP007",
+]
+
+[tool.semantic_release]
+version_variable = [
+    "pyproject.toml:project.version"
+]
+version_toml = ["pyproject.toml"]
+dist_path = "dist/"
+upload_to_pypi = true
+upload_to_release = true
+build_command = "uv run python -m build"
+version_source = "tag"
+commit_version_number = true
+commit_subject = "chore(release): {version} [skip ci]"
+commit_message = "chore(release): {version} [skip ci]\n\n{changelog}"
+commit_parser = "conventional"
+changelog_file = "CHANGELOG.md"
+changelog_components = [
+    "feat",
+    "fix", 
+    "docs",
+    "style",
+    "refactor",
+    "perf",
+    "test",
+    "build",
+    "ci",
+    "chore"
+]

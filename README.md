@@ -1,60 +1,364 @@
-# aiOla Python SDKs
+# aiOla Python SDK
 
-This repository contains Python SDKs for aiOla's Text-to-Speech (TTS) and Speech-to-Text (STT) services.
-
-## TL;DR - Demo
-
-Want to try out the playground? Just clone and run:
-
-`. ./scripts/build_examples.sh `
-
-https://github.com/user-attachments/assets/45319b52-3748-4b61-8127-adcaed96a64d
-
-
-## SDKs
-
-- [aiola-tts](libs/text_to_speech/aiola_tts/README.md): Text-to-Speech SDK
-- [aiola-stt](libs/speech_to_text/aiola_stt/README.md): Speech-to-Text SDK
+The official Python SDK for the [aiOla](https://aiola.com) API, designed to work seamlessly in both synchronous and asynchronous environments.
 
 ## Installation
 
+### Basic Installation
+
 ```bash
-pip install aiola-tts
-pip install aiola-stt
+pip install aiola
+# or
+uv add aiola
 ```
 
-## Quick Examples
+### With Microphone Support
+
+For microphone streaming functionality, install with the mic extra:
+
+```bash
+pip install 'aiola[mic]'
+# or
+uv add 'aiola[mic]'
+```
+
+## Usage
+
+### Authentication
+
+The aiOla SDK uses a **two-step authentication process**:
+
+1. **Generate Access Token**: Use your API key to create a temporary access token, save it for later use
+2. **Create Client**: Use the access token to instantiate the client
+
+#### Step 1: Generate Access Token
+
+```python
+from aiola import AiolaClient
+
+result = AiolaClient.grant_token(
+    api_key='your-api-key'
+)
+
+access_token = result['accessToken'] 
+session_id = result['sessionId']
+```
+
+#### Step 2: Create Client
+
+```python
+client = AiolaClient(
+    access_token=access_token
+)
+```
+
+#### Complete Example
+
+```python
+import os
+from aiola import AiolaClient
+
+def example():
+    try:
+        # Step 1: Generate access token
+        result = AiolaClient.grant_token(
+            api_key=os.getenv('AIOLA_API_KEY')
+        )
+        
+        # Step 2: Create client
+        client = AiolaClient(
+            access_token=result['accessToken']
+        )
+        
+        # Step 3: Use client for API calls
+        with open('path/to/your/audio.wav', 'rb') as audio_file:
+            transcript = client.stt.transcribe_file(
+                file=audio_file,
+                language='en'
+            )
+        
+        print('Transcript:', transcript)
+        
+    except Exception as error:
+        print('Error:', error)
+```
+
+#### Session Management
+
+**Close Session:**
+```python
+# Terminates the session
+result = AiolaClient.close_session(access_token)
+print(f"Session closed at: {result['deletedAt']}")
+```
+
+#### Custom base URL (enterprises)
+
+```python
+result = AiolaClient.grant_token(
+    api_key='your-api-key',
+    auth_base_url='https://mycompany.auth.aiola.ai'
+)
+
+client = AiolaClient(
+    access_token=result['accessToken'],
+    base_url='https://mycompany.api.aiola.ai'
+)
+```
+
+### Speech-to-Text – transcribe file
+
+```python
+import os
+from aiola import AiolaClient
+
+def transcribe_file():
+    try:
+        # Step 1: Generate access token
+        result = AiolaClient.grant_token(
+            api_key=os.getenv('AIOLA_API_KEY')
+        )
+        
+        # Step 2: Create client
+        client = AiolaClient(
+            access_token=result['accessToken']
+        )
+        
+        # Step 3: Transcribe file
+        with open('path/to/your/audio.wav', 'rb') as audio_file:
+            transcript = client.stt.transcribe_file(
+                file=audio_file,
+                language="en"
+            )
+
+        print(transcript)
+    except Exception as error:
+        print('Error transcribing file:', error)
+```
+
+### Speech-to-Text – live streaming
+
+```python
+import os
+import time
+from aiola import AiolaClient, MicrophoneStream # pip install 'aiola[mic]'
+from aiola.types import LiveEvents
+
+
+def live_streaming():
+    try:
+        result = AiolaClient.grant_token(
+            api_key=os.getenv("AIOLA_API_KEY") or "YOUR_API_KEY"
+        )
+        client = AiolaClient(access_token=result["accessToken"])
+        connection = client.stt.stream(lang_code="en")
+
+        @connection.on(LiveEvents.Transcript)
+        def on_transcript(data):
+            print("Transcript:", data.get("transcript", data))
+
+        @connection.on(LiveEvents.Connect)
+        def on_connect():
+            print("Connected to streaming service")
+
+        @connection.on(LiveEvents.Disconnect)
+        def on_disconnect():
+            print("Disconnected from streaming service")
+
+        @connection.on(LiveEvents.Error)
+        def on_error(error):
+            print("Streaming error:", error)
+
+        connection.connect()
+
+        with MicrophoneStream(channels=1, samplerate=16000, blocksize=4096) as mic:
+            mic.stream_to(connection)
+            # Keep the main thread alive
+            while True:
+                time.sleep(0.1)
+
+    except KeyboardInterrupt:
+        print("Keyboard interrupt")
+    except Exception as error:
+        print("Error:", error)
+    finally:
+        connection.disconnect()
+```
 
 ### Text-to-Speech
 
 ```python
-    from aiola_tts import AiolaTtsClient
-    client = AiolaTtsClient(bearer_token="YOUR_TOKEN")
-    audio = client.synthesize("Hello world")
+import os
+from aiola import AiolaClient
+
+def create_file():
+    try:
+        result = AiolaClient.grant_token(
+            api_key=os.getenv('AIOLA_API_KEY')
+        )
+
+        client = AiolaClient(
+            access_token=result['accessToken']
+        )
+        
+        audio = client.tts.synthesize(
+            text='Hello, how can I help you today?',
+            voice='jess',
+            language='en'
+        )
+
+        with open('./audio.wav', 'wb') as f:
+            for chunk in audio:
+                f.write(chunk)
+        
+        print('Audio file created successfully')
+    except Exception as error:
+        print('Error creating audio file:', error)
+
+create_file()
 ```
 
-### Speech-to-Text
+### Text-to-Speech – streaming
 
 ```python
-    from aiola_stt import AiolaSttClient, AiolaConfig, AiolaQueryParams
-    config = AiolaConfig(api_key="YOUR_KEY", query_params=AiolaQueryParams(execution_id="YOUR_GENERATED_ID"))
-    client = AiolaSttClient(config)
-    await client.connect(auto_record=True)
+import os
+from aiola import AiolaClient
+
+def stream_tts():
+    try:
+        result = AiolaClient.grant_token(
+            api_key=os.getenv('AIOLA_API_KEY')
+        )
+        
+        client = AiolaClient(
+            access_token=result['accessToken']
+        )
+        
+        stream = client.tts.stream(
+            text='Hello, how can I help you today?',
+            voice='jess',
+            language='en'
+        )
+
+        audio_chunks = []
+        for chunk in stream:
+            audio_chunks.append(chunk)
+        
+        print('Audio chunks received:', len(audio_chunks))
+    except Exception as error:
+        print('Error streaming TTS:', error)
 ```
 
-## Features
+## Async Client
 
-| Speech-to-Text (STT)                                      | Text-to-Speech (TTS)                                  |
-|:----------------------------------------------------------|:------------------------------------------------------|
-| Real-time speech transcription                            | Convert text to speech and save as WAV files          |
-| File Transcription (mp4, mp3 & wav)                       | Real-time streaming of synthesized speech             |
-| Keyword spotting                                          | Multiple voice options available                      |
-| Voice Activity Detection (VAD)                            | Support for different audio formats (LINEAR16, PCM)   |
-| Support for custom audio streams                          |                                                      |
-| Event-driven architecture                                 |                                                      |
-| Multiple language support (en-US, de-DE, fr-FR, zh-ZH, es-ES, pt-PT) |                                                      |
+For asynchronous operations, use the `AsyncAiolaClient`:
 
+### Async Speech-to-Text – file transcription
 
-## License
+```python
+import asyncio
+import os
+from aiola import AsyncAiolaClient
 
-MIT License
+async def transcribe_file():
+    try:
+        result = await AsyncAiolaClient.grant_token(
+            api_key=os.getenv('AIOLA_API_KEY')
+        )
+        
+        client = AsyncAiolaClient(
+            access_token=result['accessToken']
+        )
+        
+        with open('path/to/your/audio.wav', 'rb') as audio_file:
+            transcript = await client.stt.transcribe_file(
+                file=audio_file,
+                language="en"
+            )
+
+        print(transcript)
+    except Exception as error:
+        print('Error transcribing file:', error)
+
+if __name__ == "__main__":
+    asyncio.run(transcribe_file())
+```
+
+### Async Text-to-Speech
+
+```python
+import asyncio
+import os
+from aiola import AsyncAiolaClient
+
+async def create_audio_file():
+    try:
+        result = await AsyncAiolaClient.grant_token(
+            api_key=os.getenv('AIOLA_API_KEY')
+        )
+        
+        client = AsyncAiolaClient(
+            access_token=result['accessToken']
+        )
+        
+        audio = client.tts.synthesize(
+            text='Hello, how can I help you today?',
+            voice='jess',
+            language='en'
+        )
+
+        with open('./audio.wav', 'wb') as f:
+            async for chunk in audio:
+                f.write(chunk)
+        
+        print('Audio file created successfully')
+    except Exception as error:
+        print('Error creating audio file:', error)
+
+if __name__ == "__main__":
+    asyncio.run(create_audio_file())
+```
+
+### Async Text-to-Speech – streaming
+
+```python
+import asyncio
+import os
+from aiola import AsyncAiolaClient
+
+async def stream_tts():
+    try:
+        result = await AsyncAiolaClient.grant_token(
+            api_key=os.getenv('AIOLA_API_KEY')
+        )
+        
+        client = AsyncAiolaClient(
+            access_token=result['accessToken']
+        )
+        
+        stream = client.tts.stream(
+            text='Hello, how can I help you today?',
+            voice='jess',
+            language='en'
+        )
+
+        audio_chunks = []
+        async for chunk in stream:
+            audio_chunks.append(chunk)
+        
+        print('Audio chunks received:', len(audio_chunks))
+    except Exception as error:
+        print('Error streaming TTS:', error)
+
+if __name__ == "__main__":
+    asyncio.run(stream_tts())
+```
+
+## Requirements
+
+- Python 3.10+
+- For microphone streaming functionality: Install with `pip install 'aiola[mic]'`
+
+## Examples
+
+The SDK includes several example scripts in the `examples/` directory.
