@@ -128,7 +128,7 @@ def transcribe_file():
         with open('path/to/your/audio.wav', 'rb') as audio_file:
             transcript = client.stt.transcribe_file(
                 file=audio_file,
-                language="e" // supported lan: en,de,fr,es,pr,zh,ja,it	 
+                language="e" # supported lan: en,de,fr,es,pr,zh,ja,it	 
             )
 
         print(transcript)
@@ -151,7 +151,7 @@ def live_streaming():
             api_key=os.getenv("AIOLA_API_KEY") or "YOUR_API_KEY"
         )
         client = AiolaClient(access_token=result["accessToken"])
-        connection = client.stt.stream(lang_code="e") // supported lan: en,de,fr,es,pr,zh,ja,it
+        connection = client.stt.stream(lang_code="e") # supported lan: en,de,fr,es,pr,zh,ja,it
 
         @connection.on(LiveEvents.Transcript)
         def on_transcript(data):
@@ -273,7 +273,7 @@ async def transcribe_file():
         with open('path/to/your/audio.wav', 'rb') as audio_file:
             transcript = await client.stt.transcribe_file(
                 file=audio_file,
-                language="e" // supported lan: en,de,fr,es,pr,zh,ja,it	 
+                language="e" # supported lan: en,de,fr,es,pr,zh,ja,it	 
             )
 
         print(transcript)
