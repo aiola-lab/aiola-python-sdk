@@ -43,7 +43,10 @@ def live_streaming():
         client = AiolaClient(access_token=result["accessToken"])
         
         # Step 3: Use the client
-        connection = client.stt.stream(lang_code="en")
+        connection = client.stt.stream(
+            lang_code="en",
+            keywords={"<word_to_catch>": "<word_transcribe>"}
+            )
 
         @connection.on(LiveEvents.Transcript)
         def on_transcript(data):

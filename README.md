@@ -151,7 +151,10 @@ def live_streaming():
             api_key=os.getenv("AIOLA_API_KEY") or "YOUR_API_KEY"
         )
         client = AiolaClient(access_token=result["accessToken"])
-        connection = client.stt.stream(lang_code="e") # supported lan: en,de,fr,es,pr,zh,ja,it
+        connection = client.stt.stream(
+            lang_code="en",             # supported lan: en,de,fr,es,pr,zh,ja,it
+            keywords={"<word_to_catch>": "<word_transcribe>"}
+            )
 
         @connection.on(LiveEvents.Transcript)
         def on_transcript(data):
