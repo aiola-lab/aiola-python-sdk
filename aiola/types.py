@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import IO, TypedDict, Union
 
-from .constants import DEFAULT_AUTH_BASE_URL, DEFAULT_BASE_URL, DEFAULT_WORKFLOW_ID
+from .constants import DEFAULT_AUTH_BASE_URL, DEFAULT_BASE_URL, DEFAULT_HTTP_TIMEOUT, DEFAULT_WORKFLOW_ID
 
 
 @dataclass
@@ -17,6 +17,7 @@ class AiolaClientOptions:
     api_key: str | None = None
     access_token: str | None = None
     workflow_id: str = DEFAULT_WORKFLOW_ID
+    timeout: float | None = DEFAULT_HTTP_TIMEOUT
 
     def __post_init__(self) -> None:
         """Validate options after initialization."""
@@ -37,6 +38,9 @@ class AiolaClientOptions:
 
         if not isinstance(self.workflow_id, str):
             raise TypeError("Workflow ID must be a string")
+
+        if self.timeout is not None and not isinstance(self.timeout, (int | float)):
+            raise TypeError("Timeout must be a number")
 
 
 class LiveEvents(str, enum.Enum):

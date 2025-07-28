@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from ...constants import DEFAULT_HEADERS, HTTP_TIMEOUT
+from ...constants import DEFAULT_HEADERS, DEFAULT_HTTP_TIMEOUT
 from ...errors import AiolaError
 from ...types import AiolaClientOptions, GrantTokenResponse, SessionCloseResponse
 
@@ -85,7 +85,7 @@ class BaseAuthClient:
                 "Authorization": f"Bearer {api_key}",
             }
             # Generate temporary token
-            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+            with httpx.Client(timeout=DEFAULT_HTTP_TIMEOUT) as client:
                 token_response = client.post(
                     token_endpoint,
                     headers=headers,
@@ -152,7 +152,7 @@ class BaseAuthClient:
             session_endpoint = f"{auth_base_url}/voip-auth/session"
 
             # Generate temporary token
-            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+            async with httpx.AsyncClient(timeout=DEFAULT_HTTP_TIMEOUT) as client:
                 token_response = await client.post(
                     token_endpoint, headers={**DEFAULT_HEADERS, "Authorization": f"Bearer {api_key}"}
                 )
@@ -214,7 +214,7 @@ class BaseAuthClient:
             auth_base_url = auth_base_url.rstrip("/")
             session_endpoint = f"{auth_base_url}/voip-auth/session"
 
-            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+            async with httpx.AsyncClient(timeout=DEFAULT_HTTP_TIMEOUT) as client:
                 response = await client.delete(
                     session_endpoint,
                     headers={
@@ -283,7 +283,7 @@ class AuthClient(BaseAuthClient):
     def _api_key_to_token(self, api_key: str) -> str:
         """Generate a temporary JWT token from API key."""
         try:
-            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+            with httpx.Client(timeout=DEFAULT_HTTP_TIMEOUT) as client:
                 response = client.post(
                     f"{self._options.auth_base_url}/voip-auth/apiKey2Token",
                     headers={**DEFAULT_HEADERS, "Authorization": f"Bearer {api_key}"},
@@ -316,7 +316,7 @@ class AuthClient(BaseAuthClient):
             body = {"workflow_id": workflow_id}
             headers = {**DEFAULT_HEADERS, "Content-Type": "application/json", "Authorization": f"Bearer {token}"}
 
-            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+            with httpx.Client(timeout=DEFAULT_HTTP_TIMEOUT) as client:
                 response = client.post(
                     f"{self._options.auth_base_url}/voip-auth/session",
                     headers=headers,
@@ -375,7 +375,7 @@ class AuthClient(BaseAuthClient):
             auth_base_url = auth_base_url.rstrip("/")
             session_endpoint = f"{auth_base_url}/voip-auth/session"
 
-            with httpx.Client(timeout=HTTP_TIMEOUT) as client:
+            with httpx.Client(timeout=DEFAULT_HTTP_TIMEOUT) as client:
                 response = client.delete(
                     session_endpoint,
                     headers={
@@ -516,7 +516,7 @@ class AsyncAuthClient(BaseAuthClient):
     async def _api_key_to_token(self, api_key: str) -> str:
         """Generate a temporary JWT token from API key."""
         try:
-            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+            async with httpx.AsyncClient(timeout=DEFAULT_HTTP_TIMEOUT) as client:
                 response = await client.post(
                     f"{self._options.auth_base_url}/voip-auth/apiKey2Token",
                     headers={**DEFAULT_HEADERS, "Authorization": f"Bearer {api_key}"},
@@ -548,7 +548,7 @@ class AsyncAuthClient(BaseAuthClient):
         try:
             body = {"workflow_id": workflow_id}
 
-            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+            async with httpx.AsyncClient(timeout=DEFAULT_HTTP_TIMEOUT) as client:
                 response = await client.post(
                     f"{self._options.auth_base_url}/voip-auth/session",
                     headers={**DEFAULT_HEADERS, "Content-Type": "application/json", "Authorization": f"Bearer {token}"},
