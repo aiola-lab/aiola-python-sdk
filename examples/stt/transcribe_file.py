@@ -5,7 +5,7 @@ def transcribe_file():
     try:
         # Step 1: Generate access token
         result = AiolaClient.grant_token(
-            api_key=os.getenv('AIOLA_API_KEY')
+            api_key=os.getenv('AIOLA_API_KEY') or "YOUR_API_KEY"
         )
         
         # Step 2: Create client
