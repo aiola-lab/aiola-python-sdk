@@ -63,25 +63,6 @@ jobs:
           uv run semantic-release version --print
           echo "✅ Semantic-release validation completed"
 
-      # Safety mechanism: Version validation
-      - name: Validate version bump
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_ACTIONS_PTA }}
-        run: |
-          CURRENT_VERSION=$(uv run semantic-release print-version --current)
-          NEXT_VERSION=$(uv run semantic-release print-version --next)
-          echo "Current version: $CURRENT_VERSION"
-          echo "Next version: $NEXT_VERSION"
-
-          if [ "$CURRENT_VERSION" = "$NEXT_VERSION" ]; then
-            echo "⏭️ No version bump needed, skipping release"
-            echo "skip_release=true" >> $GITHUB_OUTPUT
-          else
-            echo "🚀 Version will be bumped from $CURRENT_VERSION to $NEXT_VERSION"
-            echo "skip_release=false" >> $GITHUB_OUTPUT
-          fi
-        id: version_check
-
       # Determine PyPI environment based on branch
       - name: Set PyPI environment
         if: steps.version_check.outputs.skip_release == 'false'
