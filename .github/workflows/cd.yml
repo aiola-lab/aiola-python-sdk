@@ -58,9 +58,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACTIONS_PTA }}
         run: |
-          echo "🔍 Running semantic-release in dry-run mode..."
-          uv run semantic-release publish --dry-run
-          echo "✅ Dry run completed successfully"
+          echo "🔍 Running semantic-release validation..."
+          echo "Checking if semantic-release can determine next version..."
+          uv run semantic-release version --print
+          echo "✅ Semantic-release validation completed"
 
       # Safety mechanism: Version validation
       - name: Validate version bump
