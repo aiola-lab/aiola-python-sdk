@@ -109,11 +109,11 @@ ignore = [
 version_variable = [
     "pyproject.toml:project.version"
 ]
-version_toml = ["pyproject.toml"]
+version_toml = ["pyproject.toml:project.version"]
 dist_path = "dist/"
 upload_to_pypi = true
 upload_to_release = true
-build_command = "uv run python -m build"
+build_command = "uv build"
 version_source = "tag_only"
 commit_version_number = false
 commit_subject = "chore(release): v{version}"
