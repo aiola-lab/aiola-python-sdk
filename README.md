@@ -40,7 +40,7 @@ result = AiolaClient.grant_token(
     api_key='your-api-key'
 )
 
-access_token = result['accessToken'] 
+access_token = result['accessToken']
 session_id = result['sessionId']
 ```
 
@@ -64,21 +64,21 @@ def example():
         result = AiolaClient.grant_token(
             api_key=os.getenv('AIOLA_API_KEY')
         )
-        
+
         # Step 2: Create client
         client = AiolaClient(
             access_token=result['accessToken']
         )
-        
+
         # Step 3: Use client for API calls
         with open('path/to/your/audio.wav', 'rb') as audio_file:
             transcript = client.stt.transcribe_file(
                 file=audio_file,
                 language='en'
             )
-        
+
         print('Transcript:', transcript)
-        
+
     except Exception as error:
         print('Error:', error)
 ```
@@ -118,17 +118,17 @@ def transcribe_file():
         result = AiolaClient.grant_token(
             api_key=os.getenv('AIOLA_API_KEY')
         )
-        
+
         # Step 2: Create client
         client = AiolaClient(
             access_token=result['accessToken']
         )
-        
+
         # Step 3: Transcribe file
         with open('path/to/your/audio.wav', 'rb') as audio_file:
             transcript = client.stt.transcribe_file(
                 file=audio_file,
-                language="e" # supported lan: en,de,fr,es,pr,zh,ja,it	 
+                language="e" # supported lan: en,de,fr,es,pr,zh,ja,it
             )
 
         print(transcript)
@@ -140,52 +140,72 @@ def transcribe_file():
 
 ```python
 import os
-import time
-from aiola import AiolaClient, MicrophoneStream # pip install 'aiola[mic]'
+from aiola import AiolaClient, MicrophoneStream
 from aiola.types import LiveEvents
-
 
 def live_streaming():
     try:
+        # Step 1: Generate access token, save it
         result = AiolaClient.grant_token(
-            api_key=os.getenv("AIOLA_API_KEY") or "YOUR_API_KEY"
+            api_key=os.getenv('AIOLA_API_KEY') or 'YOUR_API_KEY'
         )
-        client = AiolaClient(access_token=result["accessToken"])
+
+        # Step 2: Create client using the access token
+        client = AiolaClient(
+            access_token=result['accessToken']
+        )
+
+        # Step 3: Start streaming
         connection = client.stt.stream(
-            lang_code="en",             # supported lan: en,de,fr,es,pr,zh,ja,it
-            keywords={"<word_to_catch>": "<word_transcribe>"}
-            )
+            lang_code='en'
+        )
 
         @connection.on(LiveEvents.Transcript)
         def on_transcript(data):
-            print("Transcript:", data.get("transcript", data))
+            print('Transcript:', data.get('transcript', data))
 
         @connection.on(LiveEvents.Connect)
         def on_connect():
-            print("Connected to streaming service")
+            print('Connected to streaming service')
 
         @connection.on(LiveEvents.Disconnect)
         def on_disconnect():
-            print("Disconnected from streaming service")
+            print('Disconnected from streaming service')
 
         @connection.on(LiveEvents.Error)
         def on_error(error):
-            print("Streaming error:", error)
+            print('Streaming error:', error)
 
         connection.connect()
 
-        with MicrophoneStream(channels=1, samplerate=16000, blocksize=4096) as mic:
-            mic.stream_to(connection)
-            # Keep the main thread alive
-            while True:
-                time.sleep(0.1)
+        try:
+            # Capture audio from microphone using the SDK's MicrophoneStream
+            with MicrophoneStream(
+                channels=1,
+                samplerate=16000,
+                blocksize=4096,
+            ) as mic:
+                mic.stream_to(connection)
 
-    except KeyboardInterrupt:
-        print("Keyboard interrupt")
+                # Keep the main thread alive
+                while True:
+                    try:
+                        import time
+                        time.sleep(0.1)
+                    except KeyboardInterrupt:
+                        print('Keyboard interrupt')
+                        break
+
+        except KeyboardInterrupt:
+            print('Keyboard interrupt')
+
     except Exception as error:
-        print("Error:", error)
+        print('Error:', error)
     finally:
         connection.disconnect()
+
+if __name__ == "__main__":
+    live_streaming()
 ```
 
 ### Text-to-Speech
@@ -203,7 +223,7 @@ def create_file():
         client = AiolaClient(
             access_token=result['accessToken']
         )
-        
+
         audio = client.tts.synthesize(
             text='Hello, how can I help you today?',
             voice='jess',
@@ -213,7 +233,7 @@ def create_file():
         with open('./audio.wav', 'wb') as f:
             for chunk in audio:
                 f.write(chunk)
-        
+
         print('Audio file created successfully')
     except Exception as error:
         print('Error creating audio file:', error)
@@ -232,11 +252,11 @@ def stream_tts():
         result = AiolaClient.grant_token(
             api_key=os.getenv('AIOLA_API_KEY')
         )
-        
+
         client = AiolaClient(
             access_token=result['accessToken']
         )
-        
+
         stream = client.tts.stream(
             text='Hello, how can I help you today?',
             voice='jess',
@@ -246,7 +266,7 @@ def stream_tts():
         audio_chunks = []
         for chunk in stream:
             audio_chunks.append(chunk)
-        
+
         print('Audio chunks received:', len(audio_chunks))
     except Exception as error:
         print('Error streaming TTS:', error)
@@ -268,15 +288,15 @@ async def transcribe_file():
         result = await AsyncAiolaClient.grant_token(
             api_key=os.getenv('AIOLA_API_KEY')
         )
-        
+
         client = AsyncAiolaClient(
             access_token=result['accessToken']
         )
-        
+
         with open('path/to/your/audio.wav', 'rb') as audio_file:
             transcript = await client.stt.transcribe_file(
                 file=audio_file,
-                language="e" # supported lan: en,de,fr,es,pr,zh,ja,it	 
+                language="e" # supported lan: en,de,fr,es,pr,zh,ja,it
             )
 
         print(transcript)
@@ -299,11 +319,11 @@ async def create_audio_file():
         result = await AsyncAiolaClient.grant_token(
             api_key=os.getenv('AIOLA_API_KEY')
         )
-        
+
         client = AsyncAiolaClient(
             access_token=result['accessToken']
         )
-        
+
         audio = client.tts.synthesize(
             text='Hello, how can I help you today?',
             voice='jess',
@@ -313,7 +333,7 @@ async def create_audio_file():
         with open('./audio.wav', 'wb') as f:
             async for chunk in audio:
                 f.write(chunk)
-        
+
         print('Audio file created successfully')
     except Exception as error:
         print('Error creating audio file:', error)
@@ -334,11 +354,11 @@ async def stream_tts():
         result = await AsyncAiolaClient.grant_token(
             api_key=os.getenv('AIOLA_API_KEY')
         )
-        
+
         client = AsyncAiolaClient(
             access_token=result['accessToken']
         )
-        
+
         stream = client.tts.stream(
             text='Hello, how can I help you today?',
             voice='jess',
@@ -348,7 +368,7 @@ async def stream_tts():
         audio_chunks = []
         async for chunk in stream:
             audio_chunks.append(chunk)
-        
+
         print('Audio chunks received:', len(audio_chunks))
     except Exception as error:
         print('Error streaming TTS:', error)

@@ -163,6 +163,9 @@ class MicrophoneStream:
                 while self._is_recording:
                     try:
                         audio_data = self.read(timeout=0.1)
+                        # Check if connection is still active before sending
+                        if hasattr(connection, "connected") and not connection.connected:
+                            break
                         connection.send(audio_data)
                     except queue.Empty:
                         continue
