@@ -8,12 +8,12 @@ def live_streaming():
         result = AiolaClient.grant_token(
             api_key=os.getenv('AIOLA_API_KEY') or 'YOUR_API_KEY'
         )
-        
+
         # Step 2: Create client using the access token
         client = AiolaClient(
             access_token=result['accessToken']
         )
-        
+
         # Step 3: Start streaming
         connection = client.stt.stream(
             lang_code='en'
@@ -45,7 +45,7 @@ def live_streaming():
                 blocksize=4096,
             ) as mic:
                 mic.stream_to(connection)
-                
+
                 # Keep the main thread alive
                 while True:
                     try:
@@ -54,14 +54,14 @@ def live_streaming():
                     except KeyboardInterrupt:
                         print('Keyboard interrupt')
                         break
-                
+
         except KeyboardInterrupt:
             print('Keyboard interrupt')
-        finally:
-            connection.disconnect()
-        
+
     except Exception as error:
         print('Error:', error)
+    finally:
+        connection.disconnect()
 
 if __name__ == "__main__":
     live_streaming()
