@@ -1,4 +1,4 @@
-name: Enhanced CD Pipeline
+name: CD Pipeline
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           uv run pytest --cov=aiola --cov-report=term --cov-report=xml
-          
+
       - name: Build package
         run: uv build
 
@@ -71,7 +71,7 @@ jobs:
           NEXT_VERSION=$(uv run semantic-release print-version --next)
           echo "Current version: $CURRENT_VERSION"
           echo "Next version: $NEXT_VERSION"
-          
+
           if [ "$CURRENT_VERSION" = "$NEXT_VERSION" ]; then
             echo "⏭️ No version bump needed, skipping release"
             echo "skip_release=true" >> $GITHUB_OUTPUT
@@ -94,7 +94,7 @@ jobs:
             echo "PYPI_REPOSITORY_URL=https://upload.pypi.org/legacy/" >> $GITHUB_ENV
             echo "PYPI_TOKEN_VAR=PYPI_TOKEN" >> $GITHUB_ENV
             echo "PYPI_ENV=Production PyPI" >> $GITHUB_ENV
-            echo "🚀 Using Production PyPI for main branch release"  
+            echo "🚀 Using Production PyPI for main branch release"
           fi
 
       # Actual release (only if version bump needed)
@@ -105,7 +105,7 @@ jobs:
           PYPI_TOKEN: ${{ secrets[env.PYPI_TOKEN_VAR] }}
         run: |
           echo "🚀 Starting semantic release to $PYPI_ENV..."
-          
+
           # Configure PyPI repository URL for semantic-release
           if [ "${{ github.ref_name }}" = "rc" ]; then
             # For Test PyPI, we need to configure the repository URL
@@ -114,7 +114,7 @@ jobs:
           else
             echo "📦 Publishing to Production PyPI"
           fi
-          
+
           uv run semantic-release publish
           echo "✅ Release completed successfully to $PYPI_ENV"
 
@@ -124,10 +124,10 @@ jobs:
         run: |
           echo "⏳ Waiting for $PYPI_ENV propagation..."
           sleep 60
-          
+
           NEW_VERSION=$(uv run semantic-release print-version --current)
           echo "🔍 Verifying version $NEW_VERSION is available on $PYPI_ENV..."
-          
+
           # Set up pip index URL based on environment
           if [ "${{ github.ref_name }}" = "rc" ]; then
             PIP_INDEX_URL="--index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/"
@@ -136,7 +136,7 @@ jobs:
             PIP_INDEX_URL=""
             PYPI_URL="https://pypi.org/project/aiola/$NEW_VERSION/"
           fi
-          
+
           # Check if package is available on the target PyPI
           MAX_ATTEMPTS=5
           ATTEMPT=1
@@ -164,16 +164,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_ACTIONS_PTA }}
         run: |
           echo "❌ Release failed, initiating rollback..."
-          
+
           # Get the latest tag (which might have been created)
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
+
           if [ -n "$LATEST_TAG" ] && git show-ref --verify --quiet "refs/tags/$LATEST_TAG"; then
             echo "🔄 Removing failed tag: $LATEST_TAG"
             git tag -d "$LATEST_TAG" || true
             git push origin --delete "$LATEST_TAG" || true
           fi
-          
+
           echo "🔄 Rollback completed"
           echo "⚠️ Please check the logs and fix issues before retrying"
 
@@ -183,7 +183,7 @@ jobs:
         run: |
           NEW_VERSION=$(uv run semantic-release print-version --current)
           echo "🎉 Successfully released version $NEW_VERSION to $PYPI_ENV"
-          
+
           if [ "${{ github.ref_name }}" = "rc" ]; then
             echo "🧪 Test package available at: https://test.pypi.org/project/aiola/$NEW_VERSION/"
             echo "📥 Install with: pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ aiola==$NEW_VERSION"
