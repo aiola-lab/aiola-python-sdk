@@ -175,3 +175,4 @@ streamed_audio.wav
 example_output/
 .coveragerc
 .DS_Store
+.vscode
