@@ -1,6 +1,6 @@
 [project]
 name = "aiola"
-version = "0.1.1"
+version = "0.1.3"
 description = "The official Python SDK for aiOla API - Speech-to-Text and Text-to-Speech"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -123,7 +123,7 @@ commit_parser = "conventional"
 changelog_file = "CHANGELOG.md"
 changelog_components = [
     "feat",
-    "fix", 
+    "fix",
     "docs",
     "style",
     "refactor",
@@ -140,7 +140,7 @@ match = "main"
 prerelease = false
 
 [tool.semantic_release.branches.rc]
-match = "rc" 
+match = "rc"
 prerelease = true
 prerelease_token = "rc"
 
