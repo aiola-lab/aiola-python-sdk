@@ -53,6 +53,8 @@ dev = [
     "twine>=6.1.0",
     "python-semantic-release>=8.0.0",
     "build>=1.0.0",
+    "commitizen>=3.0.0",
+    "pre-commit>=3.0.0",
 ]
 
 [tool.ruff]
@@ -112,10 +114,11 @@ dist_path = "dist/"
 upload_to_pypi = true
 upload_to_release = true
 build_command = "uv run python -m build"
-version_source = "tag"
-commit_version_number = true
-commit_subject = "chore(release): {version} [skip ci]"
-commit_message = "chore(release): {version} [skip ci]\n\n{changelog}"
+version_source = "tag_only"
+commit_version_number = false
+commit_subject = "chore(release): v{version}"
+commit_message = "chore(release): v{version}\n\n{changelog}"
+tag_format = "v{version}"
 commit_parser = "conventional"
 changelog_file = "CHANGELOG.md"
 changelog_components = [
@@ -130,3 +133,44 @@ changelog_components = [
     "ci",
     "chore"
 ]
+
+# Enhanced branch configuration
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
+
+[tool.semantic_release.branches.rc]
+match = "rc" 
+prerelease = true
+prerelease_token = "rc"
+
+# Commit parsing configuration with validation
+[tool.semantic_release.commit_parser_options]
+allowed_tags = ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore"]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]
+major_tags = []
+
+# Enhanced changelog configuration
+[tool.semantic_release.changelog]
+sections = [
+    { name = "feat", title = "✨ Features" },
+    { name = "fix", title = "🐛 Bug Fixes" },
+    { name = "perf", title = "⚡ Performance Improvements" },
+    { name = "docs", title = "📚 Documentation" },
+    { name = "style", title = "🎨 Code Style" },
+    { name = "refactor", title = "♻️ Code Refactoring" },
+    { name = "test", title = "🧪 Tests" },
+    { name = "build", title = "🏗️ Build System" },
+    { name = "ci", title = "👷 CI/CD" },
+    { name = "chore", title = "🔧 Maintenance" }
+]
+
+# Commitizen configuration for conventional commits
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "semver"
+version_provider = "pep621"
+update_changelog_on_bump = true
+major_version_zero = false

@@ -1,8 +1,11 @@
-name: CD
+name: Enhanced CD Pipeline
 
 on:
   push:
     branches: ["main", "rc"]
+
+env:
+  PYTHON_VERSION: "3.12"
 
 jobs:
   test-and-release:
@@ -19,7 +22,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v2
@@ -29,20 +32,162 @@ jobs:
       - name: Install dependencies
         run: uv sync --group dev
 
+      # Enhanced quality gates
       - name: Lint with ruff
         run: uv run ruff check .
 
-      - name: Run tests
-        run: uv run pytest
+      - name: Run tests with coverage
+        run: |
+          uv run pytest --cov=aiola --cov-report=term --cov-report=xml
+          
+      - name: Build package
+        run: uv build
+
+      - name: Verify build artifacts
+        run: |
+          ls -la dist/
+          uv run twine check dist/*
 
       - name: Configure Git
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
-      - name: Semantic Release
+      # Safety mechanism: Dry run validation
+      - name: Semantic Release Dry Run
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACTIONS_PTA }}
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
+          echo "🔍 Running semantic-release in dry-run mode..."
+          uv run semantic-release publish --dry-run
+          echo "✅ Dry run completed successfully"
+
+      # Safety mechanism: Version validation
+      - name: Validate version bump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACTIONS_PTA }}
+        run: |
+          CURRENT_VERSION=$(uv run semantic-release print-version --current)
+          NEXT_VERSION=$(uv run semantic-release print-version --next)
+          echo "Current version: $CURRENT_VERSION"
+          echo "Next version: $NEXT_VERSION"
+          
+          if [ "$CURRENT_VERSION" = "$NEXT_VERSION" ]; then
+            echo "⏭️ No version bump needed, skipping release"
+            echo "skip_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "🚀 Version will be bumped from $CURRENT_VERSION to $NEXT_VERSION"
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+          fi
+        id: version_check
+
+      # Determine PyPI environment based on branch
+      - name: Set PyPI environment
+        if: steps.version_check.outputs.skip_release == 'false'
+        run: |
+          if [ "${{ github.ref_name }}" = "rc" ]; then
+            echo "PYPI_REPOSITORY_URL=https://test.pypi.org/legacy/" >> $GITHUB_ENV
+            echo "PYPI_TOKEN_VAR=TEST_PYPI_TOKEN" >> $GITHUB_ENV
+            echo "PYPI_ENV=Test PyPI" >> $GITHUB_ENV
+            echo "🧪 Using Test PyPI for rc branch release"
+          else
+            echo "PYPI_REPOSITORY_URL=https://upload.pypi.org/legacy/" >> $GITHUB_ENV
+            echo "PYPI_TOKEN_VAR=PYPI_TOKEN" >> $GITHUB_ENV
+            echo "PYPI_ENV=Production PyPI" >> $GITHUB_ENV
+            echo "🚀 Using Production PyPI for main branch release"  
+          fi
+
+      # Actual release (only if version bump needed)
+      - name: Semantic Release
+        if: steps.version_check.outputs.skip_release == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACTIONS_PTA }}
+          PYPI_TOKEN: ${{ secrets[env.PYPI_TOKEN_VAR] }}
+        run: |
+          echo "🚀 Starting semantic release to $PYPI_ENV..."
+          
+          # Configure PyPI repository URL for semantic-release
+          if [ "${{ github.ref_name }}" = "rc" ]; then
+            # For Test PyPI, we need to configure the repository URL
+            export REPOSITORY_URL="https://test.pypi.org/legacy/"
+            echo "📦 Publishing to Test PyPI"
+          else
+            echo "📦 Publishing to Production PyPI"
+          fi
+          
           uv run semantic-release publish
+          echo "✅ Release completed successfully to $PYPI_ENV"
+
+      # Post-release validation
+      - name: Verify PyPI upload
+        if: steps.version_check.outputs.skip_release == 'false'
+        run: |
+          echo "⏳ Waiting for $PYPI_ENV propagation..."
+          sleep 60
+          
+          NEW_VERSION=$(uv run semantic-release print-version --current)
+          echo "🔍 Verifying version $NEW_VERSION is available on $PYPI_ENV..."
+          
+          # Set up pip index URL based on environment
+          if [ "${{ github.ref_name }}" = "rc" ]; then
+            PIP_INDEX_URL="--index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/"
+            PYPI_URL="https://test.pypi.org/project/aiola/$NEW_VERSION/"
+          else
+            PIP_INDEX_URL=""
+            PYPI_URL="https://pypi.org/project/aiola/$NEW_VERSION/"
+          fi
+          
+          # Check if package is available on the target PyPI
+          MAX_ATTEMPTS=5
+          ATTEMPT=1
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking $PYPI_ENV..."
+            if pip index versions $PIP_INDEX_URL aiola | grep -q "$NEW_VERSION"; then
+              echo "✅ Version $NEW_VERSION successfully published to $PYPI_ENV"
+              echo "🔗 Package URL: $PYPI_URL"
+              break
+            elif [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+              echo "❌ Version $NEW_VERSION not found on $PYPI_ENV after $MAX_ATTEMPTS attempts"
+              echo "⚠️ Release may have failed or $PYPI_ENV is slow to propagate"
+              exit 1
+            else
+              echo "⏳ Version not yet available, waiting 30 seconds..."
+              sleep 30
+              ATTEMPT=$((ATTEMPT + 1))
+            fi
+          done
+
+      # Rollback mechanism (runs on failure)
+      - name: Rollback on failure
+        if: failure() && steps.version_check.outputs.skip_release == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACTIONS_PTA }}
+        run: |
+          echo "❌ Release failed, initiating rollback..."
+          
+          # Get the latest tag (which might have been created)
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -n "$LATEST_TAG" ] && git show-ref --verify --quiet "refs/tags/$LATEST_TAG"; then
+            echo "🔄 Removing failed tag: $LATEST_TAG"
+            git tag -d "$LATEST_TAG" || true
+            git push origin --delete "$LATEST_TAG" || true
+          fi
+          
+          echo "🔄 Rollback completed"
+          echo "⚠️ Please check the logs and fix issues before retrying"
+
+      # Success notification
+      - name: Success notification
+        if: success() && steps.version_check.outputs.skip_release == 'false'
+        run: |
+          NEW_VERSION=$(uv run semantic-release print-version --current)
+          echo "🎉 Successfully released version $NEW_VERSION to $PYPI_ENV"
+          
+          if [ "${{ github.ref_name }}" = "rc" ]; then
+            echo "🧪 Test package available at: https://test.pypi.org/project/aiola/$NEW_VERSION/"
+            echo "📥 Install with: pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ aiola==$NEW_VERSION"
+          else
+            echo "✅ Production package available at: https://pypi.org/project/aiola/$NEW_VERSION/"
+            echo "📥 Install with: pip install aiola==$NEW_VERSION"
+          fi
