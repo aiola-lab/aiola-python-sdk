@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import httpx
 
-from .constants import DEFAULT_BASE_URL, DEFAULT_HEADERS, HTTP_TIMEOUT
+from .constants import DEFAULT_BASE_URL, DEFAULT_HEADERS
 from .errors import AiolaError
 
 if TYPE_CHECKING:
@@ -34,8 +34,9 @@ def create_authenticated_client(options: AiolaClientOptions, auth: AuthClient) -
 
         # Create client with base URL and headers
         full_base_url = (options.base_url or DEFAULT_BASE_URL).rstrip("/")
+        timeout = options.timeout
 
-        return httpx.Client(base_url=full_base_url, headers=headers, timeout=HTTP_TIMEOUT)
+        return httpx.Client(base_url=full_base_url, headers=headers, timeout=timeout)
     except Exception as exc:
         raise AiolaError("Failed to create authenticated HTTP client") from exc
 
@@ -53,7 +54,8 @@ async def create_async_authenticated_client(options: AiolaClientOptions, auth: A
 
         # Create client with base URL and headers
         full_base_url = (options.base_url or DEFAULT_BASE_URL).rstrip("/")
+        timeout = options.timeout
 
-        return httpx.AsyncClient(base_url=full_base_url, headers=headers, timeout=HTTP_TIMEOUT)
+        return httpx.AsyncClient(base_url=full_base_url, headers=headers, timeout=timeout)
     except Exception as exc:
         raise AiolaError("Failed to create authenticated async HTTP client") from exc

@@ -3,7 +3,7 @@ from __future__ import annotations
 from .clients.auth.client import AsyncAuthClient, AuthClient
 from .clients.stt.client import AsyncSttClient, SttClient
 from .clients.tts.client import AsyncTtsClient, TtsClient
-from .constants import DEFAULT_AUTH_BASE_URL, DEFAULT_BASE_URL, DEFAULT_WORKFLOW_ID
+from .constants import DEFAULT_AUTH_BASE_URL, DEFAULT_BASE_URL, DEFAULT_HTTP_TIMEOUT, DEFAULT_WORKFLOW_ID
 from .errors import AiolaError, AiolaValidationError
 from .types import AiolaClientOptions, GrantTokenResponse, SessionCloseResponse
 
@@ -19,6 +19,7 @@ class AiolaClient:
         base_url: str | None = None,
         auth_base_url: str | None = None,
         workflow_id: str = DEFAULT_WORKFLOW_ID,
+        timeout: int = DEFAULT_HTTP_TIMEOUT,
     ):
         # Initialize lazy-loaded clients
         self._stt: SttClient | None = None
@@ -32,6 +33,7 @@ class AiolaClient:
                 api_key=api_key,
                 access_token=access_token,
                 workflow_id=workflow_id,
+                timeout=timeout,
             )
         except (ValueError, TypeError) as exc:
             raise AiolaValidationError(str(exc)) from exc
