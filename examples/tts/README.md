@@ -6,26 +6,26 @@ This directory contains examples demonstrating how to use the aiOla SDK for text
 
 <!--snippet;tts;quickstart-->
 ```python
-import os
+# pip install aiola
 from aiola import AiolaClient
 
 def synthesize_to_file():
     try:
-        # Step 1: Generate access token
-        result = AiolaClient.grant_token(
-            api_key=os.getenv("AIOLA_API_KEY") or "YOUR_API_KEY"
-        )
+        # Step 1: Set up authentication
+        result = AiolaClient.grant_token(api_key='your-api-key-here')
+        access_token = result['accessToken']
 
-        # Step 2: Create client
-        client = AiolaClient(access_token=result["accessToken"])
+        # Step 2: Create a client
+        client = AiolaClient(access_token=access_token)
 
+        # Step 3: Synthesize audio to a file
         audio_stream = client.tts.synthesize(
             text="Hello, how can I help you today?",
             voice="jess",
             language="en"
         )
 
-        # Save to file
+        # Step 4: Save to file
         with open("./output.wav", "wb") as file_stream:
             for chunk in audio_stream:
                 file_stream.write(chunk)
