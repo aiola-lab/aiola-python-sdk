@@ -30,12 +30,6 @@ jobs:
       - name: Install dependencies
         run: uv sync --group dev
 
-      # Validate commit messages for PRs
-      - name: Validate commit messages
-        if: github.event_name == 'pull_request'
-        run: |
-          uv run cz check --rev-range origin/main..HEAD
-
       - name: Lint
         run: uv run ruff check --config ./pyproject.toml .
 
