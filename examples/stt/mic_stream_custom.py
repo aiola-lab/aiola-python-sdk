@@ -13,12 +13,12 @@ def live_streaming_with_custom_mic():
         result = AiolaClient.grant_token(
             api_key=os.getenv('AIOLA_API_KEY') or 'YOUR_API_KEY'
         )
-        
+
         # Step 2: Create client using the access token
         client = AiolaClient(
-            access_token=result['accessToken']
+            access_token=result.accessToken
         )
-        
+
         # Step 3: Start streaming
         connection = client.stt.stream(
             lang_code='en'
@@ -56,7 +56,7 @@ def live_streaming_with_custom_mic():
             while True:
                 audio_data = stream.read(4096)
                 connection.send(audio_data)
-                
+
         except KeyboardInterrupt:
             print('Keyboard interrupt')
         finally:
@@ -64,7 +64,7 @@ def live_streaming_with_custom_mic():
             stream.close()
             audio.terminate()
             connection.disconnect()
-        
+
     except Exception as error:
         print('Error:', error)
 

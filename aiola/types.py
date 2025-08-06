@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import IO, TypedDict, Union
+from typing import IO, Union
 
 from .constants import DEFAULT_AUTH_BASE_URL, DEFAULT_BASE_URL, DEFAULT_HTTP_TIMEOUT, DEFAULT_WORKFLOW_ID
 
@@ -61,56 +61,65 @@ class LiveEvents(str, enum.Enum):
     Connect = "connect"
 
 
-class Segment(TypedDict):
+@dataclass
+class Segment:
     start: float
     end: float
-    text: str
 
 
-class TranscriptionMetadata(TypedDict):
+@dataclass
+class TranscriptionMetadata:
     """Metadata for transcription results."""
 
-    duration: float
+    file_duration: float
     language: str
     sample_rate: int
     num_channels: int
     timestamp_utc: str
-    model_version: str
+    asr_model_version: str
+    segments_count: int
+    total_speech_duration: float
 
 
-class TranscriptionResponse(TypedDict):
+@dataclass
+class TranscriptionResponse:
     """Response from file transcription API."""
 
     transcript: str
-    itn_transcript: str
+    raw_transcript: str
     segments: list[Segment]
     metadata: TranscriptionMetadata
 
 
-class SessionCloseResponse(TypedDict):
+@dataclass
+class SessionCloseResponse:
     """Response from session close API."""
 
     status: str
     deletedAt: str
 
 
-class GrantTokenResponse(TypedDict):
+@dataclass
+class GrantTokenResponse:
     """Response from grant token API."""
 
     accessToken: str
     sessionId: str
 
 
-class TranslationPayload(TypedDict):
+@dataclass
+class TranslationPayload:
     src_lang_code: str
     dst_lang_code: str
 
 
-class EntityDetectionFromListPayload(TypedDict):
+@dataclass
+class EntityDetectionFromListPayload:
     entity_list: list[str]
 
 
-class _EmptyPayload(TypedDict):
+@dataclass
+class _EmptyPayload:
     pass
 
 
@@ -125,18 +134,19 @@ AutoChaptersPayload = _EmptyPayload
 FormFillingPayload = _EmptyPayload
 
 
-class TasksConfig(TypedDict, total=False):
-    FORM_FILLING: FormFillingPayload
-    TRANSLATION: TranslationPayload
-    ENTITY_DETECTION: EntityDetectionPayload
-    ENTITY_DETECTION_FROM_LIST: EntityDetectionFromListPayload
-    KEY_PHRASES: KeyPhrasesPayload
-    PII_REDACTION: PiiRedactionPayload
-    SENTIMENT_ANALYSIS: SentimentAnalysisPayload
-    SUMMARIZATION: SummarizationPayload
-    TOPIC_DETECTION: TopicDetectionPayload
-    CONTENT_MODERATION: ContentModerationPayload
-    AUTO_CHAPTERS: AutoChaptersPayload
+@dataclass
+class TasksConfig:
+    FORM_FILLING: FormFillingPayload | None = None
+    TRANSLATION: TranslationPayload | None = None
+    ENTITY_DETECTION: EntityDetectionPayload | None = None
+    ENTITY_DETECTION_FROM_LIST: EntityDetectionFromListPayload | None = None
+    KEY_PHRASES: KeyPhrasesPayload | None = None
+    PII_REDACTION: PiiRedactionPayload | None = None
+    SENTIMENT_ANALYSIS: SentimentAnalysisPayload | None = None
+    SUMMARIZATION: SummarizationPayload | None = None
+    TOPIC_DETECTION: TopicDetectionPayload | None = None
+    CONTENT_MODERATION: ContentModerationPayload | None = None
+    AUTO_CHAPTERS: AutoChaptersPayload | None = None
 
 
 FileContent = Union[IO[bytes], bytes, str]

@@ -7,12 +7,12 @@ def stream_tts():
         result = AiolaClient.grant_token(
             api_key=os.getenv('AIOLA_API_KEY')
         )
-        
+
         # Step 2: Create client
         client = AiolaClient(
-            access_token=result['accessToken']
+            access_token=result.accessToken
         )
-        
+
         # Step 3: Stream audio
         stream = client.tts.stream(
             text='Hello, how can I help you today?',
@@ -23,9 +23,9 @@ def stream_tts():
         audio_chunks = []
         for chunk in stream:
             audio_chunks.append(chunk)
-        
+
         print('Audio chunks received:', len(audio_chunks))
-        
+
     except Exception as error:
         print('Error streaming TTS:', error)
 

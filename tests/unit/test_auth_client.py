@@ -9,7 +9,7 @@ import httpx
 from aiola.clients.auth.client import AuthClient, AsyncAuthClient, BaseAuthClient
 from aiola.constants import DEFAULT_AUTH_BASE_URL, DEFAULT_WORKFLOW_ID
 from aiola.errors import AiolaError
-from aiola.types import AiolaClientOptions
+from aiola.types import AiolaClientOptions, GrantTokenResponse
 
 
 class TestAuthClient:
@@ -51,12 +51,13 @@ class TestAuthClient:
 
         # Test the static method
         result = BaseAuthClient.grant_token(
-            self.mock_api_key, 
-            DEFAULT_AUTH_BASE_URL, 
+            self.mock_api_key,
+            DEFAULT_AUTH_BASE_URL,
             DEFAULT_WORKFLOW_ID
         )
 
-        assert result == {"accessToken": self.mock_access_token, "sessionId": "session_789"}
+        assert result.accessToken == self.mock_access_token
+        assert result.sessionId == "session_789"
         assert mock_client.post.call_count == 2
 
     @patch('httpx.Client')
@@ -85,12 +86,13 @@ class TestAuthClient:
         mock_client.post.side_effect = [token_response, session_response]
 
         result = BaseAuthClient.grant_token(
-            self.mock_api_key, 
+            self.mock_api_key,
             custom_base_url,
             DEFAULT_WORKFLOW_ID
         )
 
-        assert result == {"accessToken": self.mock_access_token, "sessionId": "session_789"}
+        assert result.accessToken == self.mock_access_token
+        assert result.sessionId == "session_789"
         # Verify the custom base URL was used in the endpoint calls
         calls = mock_client.post.call_args_list
         assert custom_base_url in calls[0][0][0]  # First call (token endpoint)
@@ -122,12 +124,13 @@ class TestAuthClient:
         mock_client.post.side_effect = [token_response, session_response]
 
         result = BaseAuthClient.grant_token(
-            self.mock_api_key, 
+            self.mock_api_key,
             DEFAULT_AUTH_BASE_URL,
             custom_workflow_id
         )
 
-        assert result == {"accessToken": self.mock_access_token, "sessionId": "session_789"}
+        assert result.accessToken == self.mock_access_token
+        assert result.sessionId == "session_789"
         # Check that the workflow ID was included in the session request
         session_call = mock_client.post.call_args_list[1]
         session_body = session_call[1]["json"]
@@ -158,13 +161,14 @@ class TestAuthClient:
     def test_instance_grant_token_delegates_to_static(self):
         """Test that instance method delegates to static method."""
         with patch.object(BaseAuthClient, 'grant_token') as mock_static:
-            mock_static.return_value = {"accessToken": self.mock_access_token, "sessionId": "session_789"}
+            mock_static.return_value = GrantTokenResponse(accessToken=self.mock_access_token, sessionId="session_789")
 
             result = self.auth.grant_token(self.mock_api_key, "https://test.example.com", DEFAULT_WORKFLOW_ID)
 
-            assert result == {"accessToken": self.mock_access_token, "sessionId": "session_789"}
-            mock_static.assert_called_once_with(
-                api_key=self.mock_api_key, 
+            assert result.accessToken == self.mock_access_token
+        assert result.sessionId == "session_789"
+        mock_static.assert_called_once_with(
+                api_key=self.mock_api_key,
                 auth_base_url="https://test.example.com",
                 workflow_id=DEFAULT_WORKFLOW_ID
             )
@@ -174,13 +178,14 @@ class TestAuthClient:
         custom_workflow_id = "custom_workflow_123"
 
         with patch.object(BaseAuthClient, 'grant_token') as mock_static:
-            mock_static.return_value = {"accessToken": self.mock_access_token, "sessionId": "session_789"}
+            mock_static.return_value = GrantTokenResponse(accessToken=self.mock_access_token, sessionId="session_789")
 
             result = self.auth.grant_token(self.mock_api_key, "https://test.example.com", custom_workflow_id)
 
-            assert result == {"accessToken": self.mock_access_token, "sessionId": "session_789"}
-            mock_static.assert_called_once_with(
-                api_key=self.mock_api_key, 
+            assert result.accessToken == self.mock_access_token
+        assert result.sessionId == "session_789"
+        mock_static.assert_called_once_with(
+                api_key=self.mock_api_key,
                 auth_base_url="https://test.example.com",
                 workflow_id=custom_workflow_id
             )
@@ -229,16 +234,16 @@ class TestAuthClient:
             json.dumps(payload).encode()
         ).decode().rstrip('=').replace('+', '-').replace('/', '_')
         token = f"header.{encoded_payload}.signature"
-        
+
         result = self.auth._parse_jwt_payload(token)
-        
+
         assert result["exp"] == 1234567890
         assert result["iat"] == 1234567000
 
     def test_parse_jwt_payload_invalid_format(self):
         """Test JWT payload parsing with invalid format."""
         invalid_token = "invalid.token"
-        
+
         with pytest.raises(AiolaError, match="Failed to parse JWT payload"):
             self.auth._parse_jwt_payload(invalid_token)
 
@@ -247,9 +252,9 @@ class TestAuthClient:
         # Set some cached values
         self.auth._access_token = "cached_token"
         self.auth._session_id = "cached_session"
-        
+
         self.auth.clear_session()
-        
+
         assert self.auth._access_token is None
         assert self.auth._session_id is None
 
@@ -296,12 +301,13 @@ class TestAsyncAuthClient:
 
         # Test the static method
         result = await BaseAuthClient.async_grant_token(
-            self.mock_api_key, 
-            DEFAULT_AUTH_BASE_URL, 
+            self.mock_api_key,
+            DEFAULT_AUTH_BASE_URL,
             DEFAULT_WORKFLOW_ID
         )
 
-        assert result == {"accessToken": self.mock_access_token, "sessionId": "session_789"}
+        assert result.accessToken == self.mock_access_token
+        assert result.sessionId == "session_789"
         # Verify that post was called twice (token then session)
         assert mock_client.post.call_count == 2
 
@@ -309,13 +315,14 @@ class TestAsyncAuthClient:
     async def test_instance_grant_token_delegates_to_static(self):
         """Test that async instance method delegates to static method."""
         with patch.object(BaseAuthClient, 'async_grant_token') as mock_static:
-            mock_static.return_value = {"accessToken": self.mock_access_token, "sessionId": "session_789"}
+            mock_static.return_value = GrantTokenResponse(accessToken=self.mock_access_token, sessionId="session_789")
 
             result = await self.auth.grant_token(self.mock_api_key, "https://test.example.com", DEFAULT_WORKFLOW_ID)
 
-            assert result == {"accessToken": self.mock_access_token, "sessionId": "session_789"}
-            mock_static.assert_called_once_with(
-                self.mock_api_key, 
+            assert result.accessToken == self.mock_access_token
+        assert result.sessionId == "session_789"
+        mock_static.assert_called_once_with(
+                self.mock_api_key,
                 "https://test.example.com",
                 DEFAULT_WORKFLOW_ID
             )
@@ -364,4 +371,4 @@ class TestAsyncAuthClient:
         self.auth.clear_session()
 
         assert self.auth._access_token is None
-        assert self.auth._session_id is None 
+        assert self.auth._session_id is None
