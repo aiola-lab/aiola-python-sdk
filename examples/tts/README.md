@@ -13,7 +13,7 @@ def synthesize_to_file():
     try:
         # Step 1: Set up authentication
         result = AiolaClient.grant_token(api_key='your-api-key-here')
-        access_token = result['accessToken']
+        access_token = result.access_token
 
         # Step 2: Create a client
         client = AiolaClient(access_token=access_token)
@@ -61,8 +61,8 @@ from aiola import AiolaClient
 def main():
     # Example with session management
     result = AiolaClient.grant_token(api_key=os.getenv("AIOLA_API_KEY"))
-    client = AiolaClient(access_token=result['accessToken'])
-    print(f"Session ID: {result['sessionId']}")
+    client = AiolaClient(access_token=result.access_token)
+    print(f"Session ID: {result.session_id}")
 
     def synthesize_to_file():
         audio_stream = client.tts.synthesize(
@@ -100,8 +100,8 @@ def main():
 
     # Clean up session when done
     try:
-        close_result = AiolaClient.close_session(result['accessToken'])
-        print(f"Session closed at: {close_result['deletedAt']}")
+        close_result = AiolaClient.close_session(result.access_token)
+        print(f"Session closed at: {close_result.deleted_at}")
     except Exception as e:
         print(f"Session close failed: {e}")
 
@@ -120,7 +120,7 @@ from aiola import AsyncAiolaClient
 
 async def async_tts_example():
     result = await AsyncAiolaClient.grant_token(api_key=os.getenv("AIOLA_API_KEY"))
-    client = AsyncAiolaClient(access_token=result['accessToken'])
+    client = AsyncAiolaClient(access_token=result.access_token)
 
     response = await client.tts.synthesize(text="Hello world", voice="jess", language="en")
 
@@ -128,7 +128,7 @@ async def async_tts_example():
         # Process audio chunk
         pass
 
-    await AsyncAiolaClient.close_session(result['accessToken'])
+    await AsyncAiolaClient.close_session(result.access_token)
 
 
 if __name__ == "__main__":

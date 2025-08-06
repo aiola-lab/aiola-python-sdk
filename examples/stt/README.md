@@ -11,7 +11,7 @@ from aiola import AiolaClient
 
 # Step 1: Set up authentication
 result = AiolaClient.grant_token(api_key='your-api-key-here')
-access_token = result['accessToken']
+access_token = result.access_token
 
 # Step 2: Create a client
 client = AiolaClient(access_token=access_token)
