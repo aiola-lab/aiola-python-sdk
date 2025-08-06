@@ -8,8 +8,8 @@ def example():
             api_key=os.getenv('AIOLA_API_KEY')
         )
 
-        access_token = result.accessToken
-        session_id = result.sessionId
+        access_token = result.access_token
+        session_id = result.session_id
 
         print(f"Access Token: {access_token}")
         print(f"Session ID: {session_id}")
@@ -27,7 +27,7 @@ def example():
 
         # Step 4: Close session when done
         close_result = AiolaClient.close_session(access_token)
-        print(f"Session closed at: {close_result.deletedAt}")
+        print(f"Session closed at: {close_result.deleted_at}")
         print(f"Status: {close_result.status}")
 
     except Exception as error:

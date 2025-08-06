@@ -16,7 +16,7 @@ def live_streaming_with_custom_mic():
 
         # Step 2: Create client using the access token
         client = AiolaClient(
-            access_token=result.accessToken
+            access_token=result.access_token
         )
 
         # Step 3: Start streaming

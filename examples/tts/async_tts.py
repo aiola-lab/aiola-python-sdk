@@ -11,7 +11,7 @@ async def create_audio_file():
 
         # Step 2: Create client
         client = AsyncAiolaClient(
-            access_token=result.accessToken
+            access_token=result.access_token
         )
 
         # Step 3: Generate audio
@@ -42,7 +42,7 @@ async def stream_tts():
 
         # Step 2: Create client
         client = AsyncAiolaClient(
-            access_token=result.accessToken
+            access_token=result.access_token
         )
 
         # Step 3: Stream audio

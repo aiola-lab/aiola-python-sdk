@@ -11,7 +11,7 @@ async def transcribe_file():
 
         # Step 2: Create client
         client = AsyncAiolaClient(
-            access_token=result.accessToken
+            access_token=result.access_token
         )
 
         # Step 3: Transcribe file

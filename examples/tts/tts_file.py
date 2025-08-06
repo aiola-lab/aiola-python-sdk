@@ -10,7 +10,7 @@ def create_file():
 
         # Step 2: Create client
         client = AiolaClient(
-            access_token=result.accessToken
+            access_token=result.access_token
         )
 
         # Step 3: Generate audio

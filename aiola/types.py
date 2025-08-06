@@ -95,15 +95,15 @@ class SessionCloseResponse:
     """Response from session close API."""
 
     status: str
-    deletedAt: str
+    deleted_at: str
 
 
 @dataclass
 class GrantTokenResponse:
     """Response from grant token API."""
 
-    accessToken: str
-    sessionId: str
+    access_token: str
+    session_id: str
 
 
 @dataclass

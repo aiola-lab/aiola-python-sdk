@@ -127,7 +127,9 @@ class BaseAuthClient:
                 if not session_data.get("jwt"):
                     raise AiolaError(message="Invalid session response - no jwt found", code="INVALID_SESSION_RESPONSE")
 
-                return GrantTokenResponse(accessToken=session_data["jwt"], sessionId=session_data.get("sessionId", ""))
+                return GrantTokenResponse(
+                    access_token=session_data["jwt"], session_id=session_data.get("sessionId", "")
+                )
 
         except AiolaError:
             raise
@@ -193,7 +195,9 @@ class BaseAuthClient:
                 if not session_data.get("jwt"):
                     raise AiolaError(message="Invalid session response - no jwt found", code="INVALID_SESSION_RESPONSE")
 
-                return GrantTokenResponse(accessToken=session_data["jwt"], sessionId=session_data.get("sessionId", ""))
+                return GrantTokenResponse(
+                    access_token=session_data["jwt"], session_id=session_data.get("sessionId", "")
+                )
 
         except AiolaError:
             raise
@@ -231,7 +235,7 @@ class BaseAuthClient:
                     )
 
                 data = response.json()
-                return SessionCloseResponse(status=data["status"], deletedAt=data["deletedAt"])
+                return SessionCloseResponse(status=data["status"], deleted_at=data["deletedAt"])
 
         except AiolaError:
             raise
@@ -393,7 +397,7 @@ class AuthClient(BaseAuthClient):
                     )
 
                 data = response.json()
-                return SessionCloseResponse(status=data["status"], deletedAt=data["deletedAt"])
+                return SessionCloseResponse(status=data["status"], deleted_at=data["deletedAt"])
 
         except AiolaError:
             raise
