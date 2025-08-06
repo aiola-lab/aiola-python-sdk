@@ -130,8 +130,20 @@ class DummyHTTPClient:
             chunks=[],
             json_data={
                 "transcript": "Hello, this is a test transcription.",
-                "confidence": 0.95,
-                "language": "en"
+                "raw_transcript": "Hello, this is a test transcription.",
+                "segments": [
+                    {"start": 0.0, "end": 2.5},
+                    {"start": 2.5, "end": 5.0}
+                ],
+                "metadata": {
+                    "file_duration": 5.0,
+                    "language": "en",
+                    "sample_rate": 16000,
+                    "num_channels": 1,
+                    "timestamp_utc": "2025-08-06T13:41:58.146284+00:00",
+                    "segments_count": 2,
+                    "total_speech_duration": 5.0
+                }
             }
         )
 
@@ -180,8 +192,20 @@ class DummyAsyncHTTPClient(DummyHTTPClient):
             chunks=[],
             json_data={
                 "transcript": "Hello, this is a test transcription.",
-                "confidence": 0.95,
-                "language": "en"
+                "raw_transcript": "Hello, this is a test transcription.",
+                "segments": [
+                    {"start": 0.0, "end": 2.5},
+                    {"start": 2.5, "end": 5.0}
+                ],
+                "metadata": {
+                    "file_duration": 5.0,
+                    "language": "en",
+                    "sample_rate": 16000,
+                    "num_channels": 1,
+                    "timestamp_utc": "2025-08-06T13:41:58.146284+00:00",
+                    "segments_count": 2,
+                    "total_speech_duration": 5.0
+                }
             }
         )
 

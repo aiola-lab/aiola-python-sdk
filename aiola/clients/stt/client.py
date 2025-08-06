@@ -17,7 +17,7 @@ from ...errors import (
     AiolaValidationError,
 )
 from ...http_client import create_async_authenticated_client, create_authenticated_client
-from ...types import AiolaClientOptions, File, TasksConfig, TranscriptionResponse
+from ...types import AiolaClientOptions, File, Segment, TasksConfig, TranscriptionMetadata, TranscriptionResponse
 from .stream_client import AsyncStreamConnection, StreamConnection
 
 if TYPE_CHECKING:
@@ -166,7 +166,13 @@ class SttClient(_BaseStt):
                     files=files,
                     data=data,
                 )
-                return response.json()
+                data = response.json()
+                return TranscriptionResponse(
+                    transcript=data["transcript"],
+                    raw_transcript=data["raw_transcript"],
+                    segments=[Segment(**seg) for seg in data["segments"]],
+                    metadata=TranscriptionMetadata(**data["metadata"]),
+                )
 
         except AiolaError:
             raise
@@ -260,7 +266,13 @@ class AsyncSttClient(_BaseStt):
                     files=files,
                     data=data,
                 )
-                return response.json()
+                data = response.json()
+                return TranscriptionResponse(
+                    transcript=data["transcript"],
+                    raw_transcript=data["raw_transcript"],
+                    segments=[Segment(**seg) for seg in data["segments"]],
+                    metadata=TranscriptionMetadata(**data["metadata"]),
+                )
 
         except AiolaError:
             raise

@@ -14,14 +14,14 @@ def transcribe_file():
         )
 
         # Step 3: Transcribe file
-        file_path = os.path.join(os.path.dirname(__file__), "..", "assets", "tales-of-shmulik-kipod-22050-stereo.mp3")
+        file_path = os.path.join(os.path.dirname(__file__), "..", "assets", "sample-en.wav")
         print("file_path", file_path)
 
         with open(file_path, "rb") as audio_file:
             transcript = client.stt.transcribe_file(
                 file=audio_file,
                 language="en",
-                keywords={'shmu lik':'shmulik', 'khipod':'kipod'}
+                keywords={'venus':'venuss'}
             )
 
         print('Transcript:', transcript)

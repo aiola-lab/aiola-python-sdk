@@ -19,7 +19,8 @@ async def transcribe_file():
         with open(file_path, "rb") as audio_file:
             transcript = await client.stt.transcribe_file(
                 file=audio_file,
-                language="en"
+                language="en",
+                keywords={'venus':'venuss'}
             )
 
         print('Transcript:', transcript)
