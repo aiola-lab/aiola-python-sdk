@@ -76,7 +76,6 @@ class TranscriptionMetadata:
     sample_rate: int
     num_channels: int
     timestamp_utc: str
-    asr_model_version: str
     segments_count: int
     total_speech_duration: float
 
