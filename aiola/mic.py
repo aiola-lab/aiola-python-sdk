@@ -18,6 +18,12 @@ if TYPE_CHECKING:
     import numpy as np
     import sounddevice as sd
 
+# Default values for microphone stream
+CHANNELS = 1
+SAMPLE_RATE = 16000
+BLOCK_SIZE = 4096
+DTYPE = "int16"
+
 
 class MicrophoneStream:
     """
@@ -27,10 +33,10 @@ class MicrophoneStream:
 
     def __init__(
         self,
-        channels: int = 1,
-        samplerate: int = 16000,
-        blocksize: int = 4096,
-        dtype: str = "int16",
+        channels: int = CHANNELS,
+        samplerate: int = SAMPLE_RATE,
+        blocksize: int = BLOCK_SIZE,
+        dtype: str = DTYPE,
         device: int | None = None,
     ):
         """
