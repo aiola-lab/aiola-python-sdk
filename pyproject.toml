@@ -1,6 +1,6 @@
 [project]
 name = "aiola"
-version = "0.1.4"
+version = "0.1.3"
 description = "The official Python SDK for aiOla API - Speech-to-Text and Text-to-Speech"
 readme = "README.md"
 license = {file = "LICENSE"}
