@@ -71,13 +71,22 @@ class Segment:
 class TranscriptionMetadata:
     """Metadata for transcription results."""
 
-    file_duration: float
-    language: str
-    sample_rate: int
-    num_channels: int
-    timestamp_utc: str
-    segments_count: int
-    total_speech_duration: float
+    file_duration: float | None = None
+    language: str | None = None
+    sample_rate: int | None = None
+    num_channels: int | None = None
+    timestamp_utc: str | None = None
+    segments_count: int | None = None
+    total_speech_duration: float | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> TranscriptionMetadata:
+        """Create TranscriptionMetadata from dict, filtering unknown fields."""
+        from dataclasses import fields
+
+        known_fields = {field.name for field in fields(cls)}
+        filtered_data = {k: v for k, v in data.items() if k in known_fields}
+        return cls(**filtered_data)
 
 
 @dataclass
@@ -88,6 +97,22 @@ class TranscriptionResponse:
     raw_transcript: str
     segments: list[Segment]
     metadata: TranscriptionMetadata
+
+    @classmethod
+    def from_dict(cls, data: dict) -> TranscriptionResponse:
+        """Create TranscriptionResponse from dict, properly handling segments and metadata."""
+        segments_data = data.get("segments", [])
+        segments = [Segment(start=seg["start"], end=seg["end"]) for seg in segments_data]
+
+        metadata_data = data.get("metadata", {})
+        metadata = TranscriptionMetadata.from_dict(metadata_data)
+
+        return cls(
+            transcript=data["transcript"],
+            raw_transcript=data["raw_transcript"],
+            segments=segments,
+            metadata=metadata,
+        )
 
 
 @dataclass

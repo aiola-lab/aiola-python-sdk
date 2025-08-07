@@ -17,7 +17,7 @@ from ...errors import (
     AiolaValidationError,
 )
 from ...http_client import create_async_authenticated_client, create_authenticated_client
-from ...types import AiolaClientOptions, File, Segment, TasksConfig, TranscriptionMetadata, TranscriptionResponse
+from ...types import AiolaClientOptions, File, TasksConfig, TranscriptionResponse
 from .stream_client import AsyncStreamConnection, StreamConnection
 
 if TYPE_CHECKING:
@@ -98,21 +98,6 @@ class _BaseStt:
             raise AiolaValidationError("keywords must be a dictionary")
         if tasks_config is not None and not isinstance(tasks_config, dict):
             raise AiolaValidationError("tasks_config must be a dictionary")
-
-    def _parse_transcription_response(self, json_data: dict) -> TranscriptionResponse:
-        """Parse JSON response into TranscriptionResponse object with proper type conversion."""
-        segments_data = json_data.get("segments", [])
-        segments = [Segment(start=seg["start"], end=seg["end"]) for seg in segments_data]
-
-        metadata_data = json_data.get("metadata", {})
-        metadata = TranscriptionMetadata(**metadata_data)
-
-        return TranscriptionResponse(
-            transcript=json_data["transcript"],
-            raw_transcript=json_data["raw_transcript"],
-            segments=segments,
-            metadata=metadata,
-        )
 
 
 class SttClient(_BaseStt):
@@ -206,8 +191,7 @@ class SttClient(_BaseStt):
                     files=files,
                     data=data,
                 )
-                json_data = response.json()
-                return self._parse_transcription_response(json_data)
+                return TranscriptionResponse.from_dict(response.json())
 
         except AiolaError:
             raise
@@ -318,8 +302,7 @@ class AsyncSttClient(_BaseStt):
                     files=files,
                     data=data,
                 )
-                json_data = response.json()
-                return self._parse_transcription_response(json_data)
+                return TranscriptionResponse.from_dict(response.json())
 
         except AiolaError:
             raise
