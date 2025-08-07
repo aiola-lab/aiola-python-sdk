@@ -90,7 +90,7 @@ class AiolaClient:
         Example:
             ```python
             result = AiolaClient.grant_token('your-api-key')
-            client = AiolaClient(access_token=result['accessToken'])
+            client = AiolaClient(access_token=result.access_token)
             ```
         """
         return AuthClient.grant_token(api_key=api_key, auth_base_url=auth_base_url, workflow_id=workflow_id)
@@ -111,7 +111,7 @@ class AiolaClient:
         Example:
             ```python
             result = AiolaClient.close_session('your-access-token')
-            print(f"Session closed: {result['status']}")
+            print(f"Session closed: {result.status}")
             ```
         """
         return AuthClient.close_session(access_token=access_token, auth_base_url=auth_base_url)
@@ -197,7 +197,7 @@ class AsyncAiolaClient:
         Example:
             ```python
             result = await AsyncAiolaClient.grant_token('your-api-key')
-            client = AsyncAiolaClient(access_token=result['accessToken'])
+            client = AsyncAiolaClient(access_token=result.access_token)
             ```
         """
         return await AsyncAuthClient.async_grant_token(
@@ -220,7 +220,7 @@ class AsyncAiolaClient:
         Example:
             ```python
             result = await AsyncAiolaClient.close_session('your-access-token')
-            print(f"Session closed: {result['status']}")
+            print(f"Session closed: {result.status}")
             ```
         """
         return await AsyncAuthClient.close_session(access_token=access_token, auth_base_url=auth_base_url)

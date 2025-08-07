@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import IO, TypedDict, Union
+from typing import IO, Union
 
 from .constants import DEFAULT_AUTH_BASE_URL, DEFAULT_BASE_URL, DEFAULT_HTTP_TIMEOUT, DEFAULT_WORKFLOW_ID
 
@@ -61,56 +61,89 @@ class LiveEvents(str, enum.Enum):
     Connect = "connect"
 
 
-class Segment(TypedDict):
+@dataclass
+class Segment:
     start: float
     end: float
-    text: str
 
 
-class TranscriptionMetadata(TypedDict):
+@dataclass
+class TranscriptionMetadata:
     """Metadata for transcription results."""
 
-    duration: float
-    language: str
-    sample_rate: int
-    num_channels: int
-    timestamp_utc: str
-    model_version: str
+    file_duration: float | None = None
+    language: str | None = None
+    sample_rate: int | None = None
+    num_channels: int | None = None
+    timestamp_utc: str | None = None
+    segments_count: int | None = None
+    total_speech_duration: float | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> TranscriptionMetadata:
+        """Create TranscriptionMetadata from dict, filtering unknown fields."""
+        from dataclasses import fields
+
+        known_fields = {field.name for field in fields(cls)}
+        filtered_data = {k: v for k, v in data.items() if k in known_fields}
+        return cls(**filtered_data)
 
 
-class TranscriptionResponse(TypedDict):
+@dataclass
+class TranscriptionResponse:
     """Response from file transcription API."""
 
     transcript: str
-    itn_transcript: str
+    raw_transcript: str
     segments: list[Segment]
     metadata: TranscriptionMetadata
 
+    @classmethod
+    def from_dict(cls, data: dict) -> TranscriptionResponse:
+        """Create TranscriptionResponse from dict, properly handling segments and metadata."""
+        segments_data = data.get("segments", [])
+        segments = [Segment(start=seg["start"], end=seg["end"]) for seg in segments_data]
 
-class SessionCloseResponse(TypedDict):
+        metadata_data = data.get("metadata", {})
+        metadata = TranscriptionMetadata.from_dict(metadata_data)
+
+        return cls(
+            transcript=data["transcript"],
+            raw_transcript=data["raw_transcript"],
+            segments=segments,
+            metadata=metadata,
+        )
+
+
+@dataclass
+class SessionCloseResponse:
     """Response from session close API."""
 
     status: str
-    deletedAt: str
+    deleted_at: str
 
 
-class GrantTokenResponse(TypedDict):
+@dataclass
+class GrantTokenResponse:
     """Response from grant token API."""
 
-    accessToken: str
-    sessionId: str
+    access_token: str
+    session_id: str
 
 
-class TranslationPayload(TypedDict):
+@dataclass
+class TranslationPayload:
     src_lang_code: str
     dst_lang_code: str
 
 
-class EntityDetectionFromListPayload(TypedDict):
+@dataclass
+class EntityDetectionFromListPayload:
     entity_list: list[str]
 
 
-class _EmptyPayload(TypedDict):
+@dataclass
+class _EmptyPayload:
     pass
 
 
@@ -125,18 +158,19 @@ AutoChaptersPayload = _EmptyPayload
 FormFillingPayload = _EmptyPayload
 
 
-class TasksConfig(TypedDict, total=False):
-    FORM_FILLING: FormFillingPayload
-    TRANSLATION: TranslationPayload
-    ENTITY_DETECTION: EntityDetectionPayload
-    ENTITY_DETECTION_FROM_LIST: EntityDetectionFromListPayload
-    KEY_PHRASES: KeyPhrasesPayload
-    PII_REDACTION: PiiRedactionPayload
-    SENTIMENT_ANALYSIS: SentimentAnalysisPayload
-    SUMMARIZATION: SummarizationPayload
-    TOPIC_DETECTION: TopicDetectionPayload
-    CONTENT_MODERATION: ContentModerationPayload
-    AUTO_CHAPTERS: AutoChaptersPayload
+@dataclass
+class TasksConfig:
+    FORM_FILLING: FormFillingPayload | None = None
+    TRANSLATION: TranslationPayload | None = None
+    ENTITY_DETECTION: EntityDetectionPayload | None = None
+    ENTITY_DETECTION_FROM_LIST: EntityDetectionFromListPayload | None = None
+    KEY_PHRASES: KeyPhrasesPayload | None = None
+    PII_REDACTION: PiiRedactionPayload | None = None
+    SENTIMENT_ANALYSIS: SentimentAnalysisPayload | None = None
+    SUMMARIZATION: SummarizationPayload | None = None
+    TOPIC_DETECTION: TopicDetectionPayload | None = None
+    CONTENT_MODERATION: ContentModerationPayload | None = None
+    AUTO_CHAPTERS: AutoChaptersPayload | None = None
 
 
 FileContent = Union[IO[bytes], bytes, str]

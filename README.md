@@ -2,6 +2,10 @@
 
 The official Python SDK for the [aiOla](https://aiola.com) API, designed to work seamlessly in both synchronous and asynchronous environments.
 
+## Documentation
+
+Learn more about the aiOla API and how to use the SDK in our [documentation](https://docs.aiola.ai).
+
 ## Installation
 
 ### Basic Installation
@@ -40,8 +44,8 @@ result = AiolaClient.grant_token(
     api_key='your-api-key'
 )
 
-access_token = result['accessToken']
-session_id = result['sessionId']
+access_token = result.access_token
+session_id = result.session_id
 ```
 
 #### Step 2: Create Client
@@ -67,7 +71,7 @@ def example():
 
         # Step 2: Create client
         client = AiolaClient(
-            access_token=result['accessToken']
+            access_token=result.access_token
         )
 
         # Step 3: Use client for API calls
@@ -89,7 +93,7 @@ def example():
 ```python
 # Terminates the session
 result = AiolaClient.close_session(access_token)
-print(f"Session closed at: {result['deletedAt']}")
+print(f"Session closed at: {result.deleted_at}")
 ```
 
 #### Custom base URL (enterprises)
@@ -101,7 +105,7 @@ result = AiolaClient.grant_token(
 )
 
 client = AiolaClient(
-    access_token=result['accessToken'],
+    access_token=result.access_token,
     base_url='https://mycompany.api.aiola.ai'
 )
 ```
@@ -121,7 +125,7 @@ def transcribe_file():
 
         # Step 2: Create client
         client = AiolaClient(
-            access_token=result['accessToken']
+            access_token=result.access_token
         )
 
         # Step 3: Transcribe file
@@ -152,7 +156,7 @@ def live_streaming():
 
         # Step 2: Create client using the access token
         client = AiolaClient(
-            access_token=result['accessToken']
+            access_token=result.access_token
         )
 
         # Step 3: Start streaming
@@ -221,7 +225,7 @@ def create_file():
         )
 
         client = AiolaClient(
-            access_token=result['accessToken']
+            access_token=result.access_token
         )
 
         audio = client.tts.synthesize(
@@ -254,7 +258,7 @@ def stream_tts():
         )
 
         client = AiolaClient(
-            access_token=result['accessToken']
+            access_token=result.access_token
         )
 
         stream = client.tts.stream(
@@ -290,7 +294,7 @@ async def transcribe_file():
         )
 
         client = AsyncAiolaClient(
-            access_token=result['accessToken']
+            access_token=result.access_token
         )
 
         with open('path/to/your/audio.wav', 'rb') as audio_file:
@@ -321,7 +325,7 @@ async def create_audio_file():
         )
 
         client = AsyncAiolaClient(
-            access_token=result['accessToken']
+            access_token=result.access_token
         )
 
         audio = client.tts.synthesize(
@@ -356,7 +360,7 @@ async def stream_tts():
         )
 
         client = AsyncAiolaClient(
-            access_token=result['accessToken']
+            access_token=result.access_token
         )
 
         stream = client.tts.stream(

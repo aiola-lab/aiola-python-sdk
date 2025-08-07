@@ -6,7 +6,7 @@ import pytest
 import httpx
 
 from aiola import AiolaClient, AsyncAiolaClient, AiolaError
-from aiola.types import TasksConfig, LiveEvents
+from aiola.types import TasksConfig, LiveEvents, TranscriptionResponse
 from aiola.clients.stt.client import StreamConnection, AsyncStreamConnection
 
 from tests._helpers import (
@@ -14,6 +14,8 @@ from tests._helpers import (
     DummyAsyncSocketClient,
     DummyResponse,
 )
+
+from aiola.constants import DEFAULT_WORKFLOW_ID
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +29,7 @@ def test_stt_stream_creates_connection_without_connecting(patch_dummy_socket, mo
     # Mock the auth client to return the API key directly instead of making HTTP requests
     def mock_get_access_token(self, access_token, api_key, workflow_id):
         return api_key or "secret-key"
-    
+
     from aiola.clients.auth.client import AuthClient
     monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
 
@@ -37,7 +39,7 @@ def test_stt_stream_creates_connection_without_connecting(patch_dummy_socket, mo
 
     assert isinstance(connection, StreamConnection)
     assert connection.connected is False  # Should not be connected yet
-    
+
     # Connection should be established when calling connect()
     connection.connect()
     assert connection.connected is True
@@ -69,20 +71,24 @@ def test_stt_transcribe_file_makes_expected_http_request(dummy_stt_http):
     """``SttClient.transcribe_file`` should send POST /api/speech-to-text/file with file."""
 
     client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
-    
+
     # Create a mock audio file
     audio_file = BytesIO(b"fake audio data")
-    
+
     result = client.stt.transcribe_file(
         file=audio_file,
         language="en",
     )
 
     # Check the response
-    assert isinstance(result, dict)
-    assert result["transcript"] == "Hello, this is a test transcription."
-    assert result["confidence"] == 0.95
-    assert result["language"] == "en"
+    assert isinstance(result, TranscriptionResponse)
+    assert result.transcript == "Hello, this is a test transcription."
+    assert result.raw_transcript == "Hello, this is a test transcription."
+    assert len(result.segments) == 2
+    assert result.segments[0].start == 0.0
+    assert result.segments[0].end == 2.5
+    assert result.metadata.language == "en"
+    assert result.metadata.file_duration == 5.0
 
     # Check the HTTP request
     assert len(dummy_stt_http.post_calls) == 1
@@ -90,7 +96,7 @@ def test_stt_transcribe_file_makes_expected_http_request(dummy_stt_http):
     assert recorded["path"] == "/api/speech-to-text/file"
     assert recorded["files"]["file"] == audio_file
     assert recorded["data"]["language"] == "en"
-    
+
     # Verify empty keywords JSON is sent (since keywords defaults to empty dict)
     keywords_json = recorded["data"]["keywords"]
     parsed_keywords = json.loads(keywords_json)
@@ -101,12 +107,12 @@ def test_stt_transcribe_file_with_keywords(dummy_stt_http):
     """``SttClient.transcribe_file`` properly serializes keywords."""
 
     client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
-    
+
     # Create a mock audio file
     audio_file = BytesIO(b"fake audio data")
-    
+
     keywords = {"hello": "greeting", "world": "place"}
-    
+
     result = client.stt.transcribe_file(
         file=audio_file,
         language="fr",
@@ -114,7 +120,7 @@ def test_stt_transcribe_file_with_keywords(dummy_stt_http):
     )
 
     # Check the response
-    assert result["transcript"] == "Hello, this is a test transcription."
+    assert result.transcript == "Hello, this is a test transcription."
 
     # Check the HTTP request
     assert len(dummy_stt_http.post_calls) == 1
@@ -122,7 +128,7 @@ def test_stt_transcribe_file_with_keywords(dummy_stt_http):
     assert recorded["path"] == "/api/speech-to-text/file"
     assert recorded["files"]["file"] == audio_file
     assert recorded["data"]["language"] == "fr"
-    
+
     # Verify keywords was properly serialized
     keywords_json = recorded["data"]["keywords"]
     parsed_keywords = json.loads(keywords_json)
@@ -134,16 +140,16 @@ def test_stt_transcribe_file_with_default_parameters(dummy_stt_http):
     """``SttClient.transcribe_file`` uses default values when parameters are not provided."""
 
     client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
-    
+
     # Create a mock audio file
     audio_file = BytesIO(b"fake audio data")
-    
+
     # Call without optional parameters
     result = client.stt.transcribe_file(file=audio_file)
 
     # Check the response
-    assert isinstance(result, dict)
-    assert result["transcript"] == "Hello, this is a test transcription."
+    assert isinstance(result, TranscriptionResponse)
+    assert result.transcript == "Hello, this is a test transcription."
 
     # Check the HTTP request uses defaults
     assert len(dummy_stt_http.post_calls) == 1
@@ -151,7 +157,7 @@ def test_stt_transcribe_file_with_default_parameters(dummy_stt_http):
     assert recorded["path"] == "/api/speech-to-text/file"
     assert recorded["files"]["file"] == audio_file
     assert recorded["data"]["language"] == "en"  # Default language
-    
+
     # Verify empty keywords JSON is sent
     keywords_json = recorded["data"]["keywords"]
     parsed_keywords = json.loads(keywords_json)
@@ -162,10 +168,10 @@ def test_stt_transcribe_file_with_empty_keywords(dummy_stt_http):
     """``SttClient.transcribe_file`` handles empty keywords dict properly."""
 
     client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
-    
+
     # Create a mock audio file
     audio_file = BytesIO(b"fake audio data")
-    
+
     result = client.stt.transcribe_file(
         file=audio_file,
         language="es",
@@ -173,13 +179,13 @@ def test_stt_transcribe_file_with_empty_keywords(dummy_stt_http):
     )
 
     # Check the response
-    assert result["transcript"] == "Hello, this is a test transcription."
+    assert result.transcript == "Hello, this is a test transcription."
 
     # Check the HTTP request
     assert len(dummy_stt_http.post_calls) == 1
     recorded = dummy_stt_http.post_calls[0]
     assert recorded["data"]["language"] == "es"
-    
+
     # Verify empty keywords JSON
     keywords_json = recorded["data"]["keywords"]
     parsed_keywords = json.loads(keywords_json)
@@ -190,17 +196,17 @@ def test_stt_transcribe_file_with_different_file_types(dummy_stt_http):
     """``SttClient.transcribe_file`` works with different file input types."""
 
     client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
-    
+
     # Test with bytes
     audio_bytes = b"fake audio data as bytes"
     result = client.stt.transcribe_file(file=audio_bytes)
-    assert result["transcript"] == "Hello, this is a test transcription."
-    
+    assert result.transcript == "Hello, this is a test transcription."
+
     # Test with tuple (filename, file)
     audio_file_tuple = ("audio.wav", BytesIO(b"fake audio data"))
     result = client.stt.transcribe_file(file=audio_file_tuple)
-    assert result["transcript"] == "Hello, this is a test transcription."
-    
+    assert result.transcript == "Hello, this is a test transcription."
+
     # Verify both calls were made
     assert len(dummy_stt_http.post_calls) == 2
 
@@ -209,10 +215,10 @@ def test_stt_transcribe_file_with_complex_keywords(dummy_stt_http):
     """``SttClient.transcribe_file`` handles complex keyword structures."""
 
     client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
-    
+
     # Create a mock audio file
     audio_file = BytesIO(b"fake audio data")
-    
+
     # Complex keywords with special characters and numbers
     keywords = {
         "API key": "authentication",
@@ -220,19 +226,19 @@ def test_stt_transcribe_file_with_complex_keywords(dummy_stt_http):
         "123-456-7890": "phone",
         "special!@#$%": "symbols",
     }
-    
+
     result = client.stt.transcribe_file(
         file=audio_file,
         keywords=keywords,
     )
 
     # Check the response
-    assert result["transcript"] == "Hello, this is a test transcription."
+    assert result.transcript == "Hello, this is a test transcription."
 
     # Check the HTTP request
     assert len(dummy_stt_http.post_calls) == 1
     recorded = dummy_stt_http.post_calls[0]
-    
+
     # Verify complex keywords were properly serialized
     keywords_json = recorded["data"]["keywords"]
     parsed_keywords = json.loads(keywords_json)
@@ -431,7 +437,7 @@ def test_stream_connection_wrapper_functionality(patch_dummy_socket):
     # Connect first
     connection.connect()
     assert connection.connected is True
-    
+
     # Now methods should work
     @connection.on(LiveEvents.Transcript)
     def on_transcript(data):
@@ -448,11 +454,11 @@ def test_stream_connection_wrapper_functionality(patch_dummy_socket):
 
     # Verify the underlying socket received the correct calls
     sio = connection._sio
-    
+
     # Check that event handlers were registered with the correct namespace
     assert f"{LiveEvents.Transcript}:/events" in sio.event_handlers
     assert f"{LiveEvents.Error}:/events" in sio.event_handlers
-    
+
     # Check that send() translates to emit() with correct parameters
     assert len(sio.emit_calls) == 1
     emit_call = sio.emit_calls[0]
@@ -549,20 +555,24 @@ async def test_async_stt_transcribe_file_makes_expected_http_request(dummy_async
     """``AsyncSttClient.transcribe_file`` should send POST /api/speech-to-text/file with file."""
 
     client = AsyncAiolaClient(api_key="secret-key", base_url="https://speech.example")
-    
+
     # Create a mock audio file
     audio_file = BytesIO(b"fake audio data")
-    
+
     result = await client.stt.transcribe_file(
         file=audio_file,
         language="en",
     )
 
     # Check the response
-    assert isinstance(result, dict)
-    assert result["transcript"] == "Hello, this is a test transcription."
-    assert result["confidence"] == 0.95
-    assert result["language"] == "en"
+    assert isinstance(result, TranscriptionResponse)
+    assert result.transcript == "Hello, this is a test transcription."
+    assert result.raw_transcript == "Hello, this is a test transcription."
+    assert len(result.segments) == 2
+    assert result.segments[0].start == 0.0
+    assert result.segments[0].end == 2.5
+    assert result.metadata.language == "en"
+    assert result.metadata.file_duration == 5.0
 
     # Check the HTTP request
     assert len(dummy_async_stt_http.post_calls) == 1
@@ -570,7 +580,7 @@ async def test_async_stt_transcribe_file_makes_expected_http_request(dummy_async
     assert recorded["path"] == "/api/speech-to-text/file"
     assert recorded["files"]["file"] == audio_file
     assert recorded["data"]["language"] == "en"
-    
+
     # Verify empty keywords JSON is sent (since keywords defaults to empty dict)
     keywords_json = recorded["data"]["keywords"]
     parsed_keywords = json.loads(keywords_json)
@@ -582,12 +592,12 @@ async def test_async_stt_transcribe_file_with_keywords(dummy_async_stt_http):
     """``AsyncSttClient.transcribe_file`` properly serializes keywords."""
 
     client = AsyncAiolaClient(api_key="secret-key", base_url="https://speech.example")
-    
+
     # Create a mock audio file
     audio_file = BytesIO(b"fake audio data")
-    
+
     keywords = {"hello": "greeting", "world": "place"}
-    
+
     result = await client.stt.transcribe_file(
         file=audio_file,
         language="fr",
@@ -595,7 +605,7 @@ async def test_async_stt_transcribe_file_with_keywords(dummy_async_stt_http):
     )
 
     # Check the response
-    assert result["transcript"] == "Hello, this is a test transcription."
+    assert result.transcript == "Hello, this is a test transcription."
 
     # Check the HTTP request
     assert len(dummy_async_stt_http.post_calls) == 1
@@ -603,7 +613,7 @@ async def test_async_stt_transcribe_file_with_keywords(dummy_async_stt_http):
     assert recorded["path"] == "/api/speech-to-text/file"
     assert recorded["files"]["file"] == audio_file
     assert recorded["data"]["language"] == "fr"
-    
+
     # Verify keywords was properly serialized
     keywords_json = recorded["data"]["keywords"]
     parsed_keywords = json.loads(keywords_json)
@@ -616,16 +626,16 @@ async def test_async_stt_transcribe_file_with_default_parameters(dummy_async_stt
     """``AsyncSttClient.transcribe_file`` uses default values when parameters are not provided."""
 
     client = AsyncAiolaClient(api_key="secret-key", base_url="https://speech.example")
-    
+
     # Create a mock audio file
     audio_file = BytesIO(b"fake audio data")
-    
+
     # Call without optional parameters
     result = await client.stt.transcribe_file(file=audio_file)
 
     # Check the response
-    assert isinstance(result, dict)
-    assert result["transcript"] == "Hello, this is a test transcription."
+    assert isinstance(result, TranscriptionResponse)
+    assert result.transcript == "Hello, this is a test transcription."
 
     # Check the HTTP request uses defaults
     assert len(dummy_async_stt_http.post_calls) == 1
@@ -633,7 +643,7 @@ async def test_async_stt_transcribe_file_with_default_parameters(dummy_async_stt
     assert recorded["path"] == "/api/speech-to-text/file"
     assert recorded["files"]["file"] == audio_file
     assert recorded["data"]["language"] == "en"  # Default language
-    
+
     # Verify empty keywords JSON is sent
     keywords_json = recorded["data"]["keywords"]
     parsed_keywords = json.loads(keywords_json)
@@ -650,10 +660,10 @@ async def test_async_stt_transcribe_file_handles_http_error(monkeypatch):
     # Mock auth client methods first
     def mock_get_access_token(self, options):
         return "fake_access_token"
-    
+
     async def mock_async_get_access_token(self, options):
         return "fake_access_token"
-    
+
     monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
     monkeypatch.setattr(AsyncAuthClient, "get_access_token", mock_async_get_access_token)
 
@@ -696,10 +706,10 @@ async def test_async_stt_transcribe_file_handles_network_error(monkeypatch):
     # Mock auth client methods first
     def mock_get_access_token(self, options):
         return "fake_access_token"
-    
+
     async def mock_async_get_access_token(self, options):
         return "fake_access_token"
-    
+
     monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
     monkeypatch.setattr(AsyncAuthClient, "get_access_token", mock_async_get_access_token)
 
@@ -741,7 +751,7 @@ def test_stt_stream_connection_raises_aiola_error(monkeypatch):
     # Mock auth client methods first
     def mock_get_access_token(self, access_token, api_key, workflow_id):
         return "fake_access_token"
-    
+
     monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
     monkeypatch.setattr(AsyncAuthClient, "get_access_token", mock_get_access_token)
 
@@ -768,10 +778,10 @@ async def test_async_stt_stream_connection_raises_aiola_error(monkeypatch):
     # Mock auth client methods first
     def mock_get_access_token(self, access_token, api_key, workflow_id):
         return "fake_access_token"
-    
+
     async def mock_async_get_access_token(self, access_token, api_key, workflow_id):
         return "fake_access_token"
-    
+
     monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
     monkeypatch.setattr(AsyncAuthClient, "get_access_token", mock_async_get_access_token)
 
@@ -789,6 +799,125 @@ async def test_async_stt_stream_connection_raises_aiola_error(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# workflow_id precedence tests
+# ---------------------------------------------------------------------------
+
+
+def test_workflow_id_precedence_method_param_overrides_client_default(patch_dummy_socket, monkeypatch):
+    """Method-level workflow_id parameter should override client default."""
+
+    def mock_get_access_token(self, access_token, api_key, workflow_id):
+        # Track which workflow_id was passed to auth
+        mock_get_access_token.called_with_workflow_id = workflow_id
+        return "test-token"
+
+    from aiola.clients.auth.client import AuthClient
+    monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
+
+    client = AiolaClient(api_key="secret-key", workflow_id="client-workflow-123")
+    connection = client.stt.stream(workflow_id="method-workflow-456")
+
+    # Auth should have been called with method-level workflow_id
+    assert mock_get_access_token.called_with_workflow_id == "method-workflow-456"
+
+    # URL should contain method-level workflow_id
+    parsed_url = urllib.parse.urlparse(connection._url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+    assert query_params["flow_id"][0] == "method-workflow-456"
+
+
+def test_workflow_id_precedence_client_default_when_method_param_none(patch_dummy_socket, monkeypatch):
+    """Client-level workflow_id should be used when method parameter is None."""
+
+    def mock_get_access_token(self, access_token, api_key, workflow_id):
+        mock_get_access_token.called_with_workflow_id = workflow_id
+        return "test-token"
+
+    from aiola.clients.auth.client import AuthClient
+    monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
+
+    client = AiolaClient(api_key="secret-key", workflow_id="client-workflow-123")
+    connection = client.stt.stream(workflow_id=None)
+
+    # Auth should have been called with client-level workflow_id
+    assert mock_get_access_token.called_with_workflow_id == "client-workflow-123"
+
+    # URL should contain client-level workflow_id
+    parsed_url = urllib.parse.urlparse(connection._url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+    assert query_params["flow_id"][0] == "client-workflow-123"
+
+
+def test_workflow_id_precedence_default_fallback(patch_dummy_socket, monkeypatch):
+    """Should fall back to DEFAULT_WORKFLOW_ID when neither client nor method provide it."""
+
+    def mock_get_access_token(self, access_token, api_key, workflow_id):
+        mock_get_access_token.called_with_workflow_id = workflow_id
+        return "test-token"
+
+    from aiola.clients.auth.client import AuthClient
+    monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
+
+    client = AiolaClient(api_key="secret-key")  # No workflow_id provided
+    connection = client.stt.stream()  # No workflow_id provided
+
+    # Auth should have been called with DEFAULT_WORKFLOW_ID
+    assert mock_get_access_token.called_with_workflow_id == DEFAULT_WORKFLOW_ID
+
+    # URL should contain DEFAULT_WORKFLOW_ID
+    parsed_url = urllib.parse.urlparse(connection._url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+    assert query_params["flow_id"][0] == DEFAULT_WORKFLOW_ID
+
+
+@pytest.mark.anyio
+async def test_async_workflow_id_precedence_method_param_overrides_client_default(patch_dummy_async_socket, monkeypatch):
+    """Async method-level workflow_id parameter should override client default."""
+
+    async def mock_async_get_access_token(self, access_token, api_key, workflow_id):
+        mock_async_get_access_token.called_with_workflow_id = workflow_id
+        return "test-token"
+
+    from aiola.clients.auth.client import AsyncAuthClient
+    monkeypatch.setattr(AsyncAuthClient, "get_access_token", mock_async_get_access_token)
+
+    client = AsyncAiolaClient(api_key="secret-key", workflow_id="client-workflow-123")
+    connection = await client.stt.stream(workflow_id="method-workflow-456")
+
+    # Auth should have been called with method-level workflow_id
+    assert mock_async_get_access_token.called_with_workflow_id == "method-workflow-456"
+
+    # URL should contain method-level workflow_id
+    parsed_url = urllib.parse.urlparse(connection._url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+    assert query_params["flow_id"][0] == "method-workflow-456"
+
+
+@pytest.mark.anyio
+async def test_async_workflow_id_precedence_client_default_when_method_param_none(patch_dummy_async_socket, monkeypatch):
+    """Async client-level workflow_id should be used when method parameter is None."""
+
+    async def mock_async_get_access_token(self, access_token, api_key, workflow_id):
+        mock_async_get_access_token.called_with_workflow_id = workflow_id
+        return "test-token"
+
+    from aiola.clients.auth.client import AsyncAuthClient
+    monkeypatch.setattr(AsyncAuthClient, "get_access_token", mock_async_get_access_token)
+
+    client = AsyncAiolaClient(api_key="secret-key", workflow_id="client-workflow-123")
+    connection = await client.stt.stream(workflow_id=None)
+
+    # Auth should have been called with client-level workflow_id
+    assert mock_async_get_access_token.called_with_workflow_id == "client-workflow-123"
+
+    # URL should contain client-level workflow_id
+    parsed_url = urllib.parse.urlparse(connection._url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+    assert query_params["flow_id"][0] == "client-workflow-123"
+
+
+# ---------------------------------------------------------------------------
 # Error handling tests
 # ---------------------------------------------------------------------------
 
@@ -802,7 +931,7 @@ def test_stt_transcribe_file_handles_http_error(monkeypatch):
     # Mock auth client methods first
     def mock_get_access_token(self, options):
         return "fake_access_token"
-    
+
     monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
     monkeypatch.setattr(AsyncAuthClient, "get_access_token", mock_get_access_token)
 
@@ -844,7 +973,7 @@ def test_stt_transcribe_file_handles_network_error(monkeypatch):
     # Mock auth client methods first
     def mock_get_access_token(self, options):
         return "fake_access_token"
-    
+
     monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
     monkeypatch.setattr(AsyncAuthClient, "get_access_token", mock_get_access_token)
 
@@ -881,7 +1010,7 @@ def test_stt_transcribe_file_handles_json_decode_error(monkeypatch):
     # Mock auth client methods first
     def mock_get_access_token(self, options):
         return "fake_access_token"
-    
+
     monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
     monkeypatch.setattr(AsyncAuthClient, "get_access_token", mock_get_access_token)
 
@@ -943,7 +1072,7 @@ async def test_async_stream_connection_wrapper_functionality(patch_dummy_async_s
     # Connect first
     await connection.connect()
     assert connection.connected is True
-    
+
     # Now methods should work
     @connection.on(LiveEvents.Transcript)
     def on_transcript(data):
@@ -960,11 +1089,11 @@ async def test_async_stream_connection_wrapper_functionality(patch_dummy_async_s
 
     # Verify the underlying socket received the correct calls
     sio = connection._sio
-    
+
     # Check that event handlers were registered with the correct namespace
     assert f"{LiveEvents.Transcript}:/events" in sio.event_handlers
     assert f"{LiveEvents.Error}:/events" in sio.event_handlers
-    
+
     # Check that send() translates to emit() with correct parameters
     assert len(sio.emit_calls) == 1
     emit_call = sio.emit_calls[0]
