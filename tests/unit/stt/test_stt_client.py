@@ -15,6 +15,8 @@ from tests._helpers import (
     DummyResponse,
 )
 
+from aiola.constants import DEFAULT_WORKFLOW_ID
+
 
 # ---------------------------------------------------------------------------
 # Success paths
@@ -794,6 +796,125 @@ async def test_async_stt_stream_connection_raises_aiola_error(monkeypatch):
 
     with pytest.raises(AiolaError):
         await connection.connect()
+
+
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# workflow_id precedence tests
+# ---------------------------------------------------------------------------
+
+
+def test_workflow_id_precedence_method_param_overrides_client_default(patch_dummy_socket, monkeypatch):
+    """Method-level workflow_id parameter should override client default."""
+
+    def mock_get_access_token(self, access_token, api_key, workflow_id):
+        # Track which workflow_id was passed to auth
+        mock_get_access_token.called_with_workflow_id = workflow_id
+        return "test-token"
+
+    from aiola.clients.auth.client import AuthClient
+    monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
+
+    client = AiolaClient(api_key="secret-key", workflow_id="client-workflow-123")
+    connection = client.stt.stream(workflow_id="method-workflow-456")
+
+    # Auth should have been called with method-level workflow_id
+    assert mock_get_access_token.called_with_workflow_id == "method-workflow-456"
+
+    # URL should contain method-level workflow_id
+    parsed_url = urllib.parse.urlparse(connection._url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+    assert query_params["flow_id"][0] == "method-workflow-456"
+
+
+def test_workflow_id_precedence_client_default_when_method_param_none(patch_dummy_socket, monkeypatch):
+    """Client-level workflow_id should be used when method parameter is None."""
+
+    def mock_get_access_token(self, access_token, api_key, workflow_id):
+        mock_get_access_token.called_with_workflow_id = workflow_id
+        return "test-token"
+
+    from aiola.clients.auth.client import AuthClient
+    monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
+
+    client = AiolaClient(api_key="secret-key", workflow_id="client-workflow-123")
+    connection = client.stt.stream(workflow_id=None)
+
+    # Auth should have been called with client-level workflow_id
+    assert mock_get_access_token.called_with_workflow_id == "client-workflow-123"
+
+    # URL should contain client-level workflow_id
+    parsed_url = urllib.parse.urlparse(connection._url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+    assert query_params["flow_id"][0] == "client-workflow-123"
+
+
+def test_workflow_id_precedence_default_fallback(patch_dummy_socket, monkeypatch):
+    """Should fall back to DEFAULT_WORKFLOW_ID when neither client nor method provide it."""
+
+    def mock_get_access_token(self, access_token, api_key, workflow_id):
+        mock_get_access_token.called_with_workflow_id = workflow_id
+        return "test-token"
+
+    from aiola.clients.auth.client import AuthClient
+    monkeypatch.setattr(AuthClient, "get_access_token", mock_get_access_token)
+
+    client = AiolaClient(api_key="secret-key")  # No workflow_id provided
+    connection = client.stt.stream()  # No workflow_id provided
+
+    # Auth should have been called with DEFAULT_WORKFLOW_ID
+    assert mock_get_access_token.called_with_workflow_id == DEFAULT_WORKFLOW_ID
+
+    # URL should contain DEFAULT_WORKFLOW_ID
+    parsed_url = urllib.parse.urlparse(connection._url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+    assert query_params["flow_id"][0] == DEFAULT_WORKFLOW_ID
+
+
+@pytest.mark.anyio
+async def test_async_workflow_id_precedence_method_param_overrides_client_default(patch_dummy_async_socket, monkeypatch):
+    """Async method-level workflow_id parameter should override client default."""
+
+    async def mock_async_get_access_token(self, access_token, api_key, workflow_id):
+        mock_async_get_access_token.called_with_workflow_id = workflow_id
+        return "test-token"
+
+    from aiola.clients.auth.client import AsyncAuthClient
+    monkeypatch.setattr(AsyncAuthClient, "get_access_token", mock_async_get_access_token)
+
+    client = AsyncAiolaClient(api_key="secret-key", workflow_id="client-workflow-123")
+    connection = await client.stt.stream(workflow_id="method-workflow-456")
+
+    # Auth should have been called with method-level workflow_id
+    assert mock_async_get_access_token.called_with_workflow_id == "method-workflow-456"
+
+    # URL should contain method-level workflow_id
+    parsed_url = urllib.parse.urlparse(connection._url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+    assert query_params["flow_id"][0] == "method-workflow-456"
+
+
+@pytest.mark.anyio
+async def test_async_workflow_id_precedence_client_default_when_method_param_none(patch_dummy_async_socket, monkeypatch):
+    """Async client-level workflow_id should be used when method parameter is None."""
+
+    async def mock_async_get_access_token(self, access_token, api_key, workflow_id):
+        mock_async_get_access_token.called_with_workflow_id = workflow_id
+        return "test-token"
+
+    from aiola.clients.auth.client import AsyncAuthClient
+    monkeypatch.setattr(AsyncAuthClient, "get_access_token", mock_async_get_access_token)
+
+    client = AsyncAiolaClient(api_key="secret-key", workflow_id="client-workflow-123")
+    connection = await client.stt.stream(workflow_id=None)
+
+    # Auth should have been called with client-level workflow_id
+    assert mock_async_get_access_token.called_with_workflow_id == "client-workflow-123"
+
+    # URL should contain client-level workflow_id
+    parsed_url = urllib.parse.urlparse(connection._url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+    assert query_params["flow_id"][0] == "client-workflow-123"
 
 
 # ---------------------------------------------------------------------------

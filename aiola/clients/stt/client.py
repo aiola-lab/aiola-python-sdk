@@ -38,6 +38,14 @@ class _BaseStt:
         except Exception as exc:
             raise AiolaError("Failed to build streaming URL") from exc
 
+    def _resolve_workflow_id(self, workflow_id: str | None) -> str:
+        """Resolve workflow_id with proper precedence: method param > client options > default."""
+        if workflow_id is not None:
+            return workflow_id
+        if self._options.workflow_id:
+            return self._options.workflow_id
+        return DEFAULT_WORKFLOW_ID
+
     def _build_query_and_headers(
         self,
         workflow_id: str | None,
@@ -50,10 +58,11 @@ class _BaseStt:
     ) -> tuple[dict[str, str], dict[str, str]]:
         """Build query parameters and headers for streaming requests."""
         execution_id = execution_id or str(uuid.uuid4())
+        resolved_workflow_id = self._resolve_workflow_id(workflow_id)
 
         query = {
             "execution_id": execution_id,
-            "flow_id": workflow_id or DEFAULT_WORKFLOW_ID,
+            "flow_id": resolved_workflow_id,
             "lang_code": lang_code or "en",
             "time_zone": time_zone or "UTC",
             "keywords": json.dumps(keywords or {}),
@@ -90,6 +99,21 @@ class _BaseStt:
         if tasks_config is not None and not isinstance(tasks_config, dict):
             raise AiolaValidationError("tasks_config must be a dictionary")
 
+    def _parse_transcription_response(self, json_data: dict) -> TranscriptionResponse:
+        """Parse JSON response into TranscriptionResponse object with proper type conversion."""
+        segments_data = json_data.get("segments", [])
+        segments = [Segment(start=seg["start"], end=seg["end"]) for seg in segments_data]
+
+        metadata_data = json_data.get("metadata", {})
+        metadata = TranscriptionMetadata(**metadata_data)
+
+        return TranscriptionResponse(
+            transcript=json_data["transcript"],
+            raw_transcript=json_data["raw_transcript"],
+            segments=segments,
+            metadata=metadata,
+        )
+
 
 class SttClient(_BaseStt):
     """STT client."""
@@ -107,15 +131,31 @@ class SttClient(_BaseStt):
         keywords: dict[str, str] | None = None,
         tasks_config: TasksConfig | None = None,
     ) -> StreamConnection:
-        """Create a streaming connection for real-time transcription."""
+        """Create a streaming connection for real-time transcription.
+
+        Args:
+            workflow_id: Workflow ID to use for this stream. If not provided, uses the client's
+                        workflow_id from initialization, or falls back to the default workflow.
+            execution_id: Unique execution ID. If not provided, a UUID will be generated.
+            lang_code: Language code for transcription (default: "en").
+            time_zone: Time zone for timestamps (default: "UTC").
+            keywords: Optional keywords dictionary for enhanced transcription.
+            tasks_config: Optional configuration for additional AI tasks.
+
+        Returns:
+            StreamConnection: A connection object for real-time streaming.
+        """
         try:
             self._validate_stream_params(workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config)
 
-            # Get access token for streaming connection
+            # Resolve workflow_id with proper precedence
+            resolved_workflow_id = self._resolve_workflow_id(workflow_id)
+
+            # Get access token for streaming connection using resolved workflow_id
             access_token = self._auth.get_access_token(
                 access_token=self._options.access_token or "",
                 api_key=self._options.api_key or "",
-                workflow_id=self._options.workflow_id,
+                workflow_id=resolved_workflow_id,
             )
 
             # Build query parameters and headers
@@ -166,13 +206,8 @@ class SttClient(_BaseStt):
                     files=files,
                     data=data,
                 )
-                data = response.json()
-                return TranscriptionResponse(
-                    transcript=data["transcript"],
-                    raw_transcript=data["raw_transcript"],
-                    segments=[Segment(**seg) for seg in data["segments"]],
-                    metadata=TranscriptionMetadata(**data["metadata"]),
-                )
+                json_data = response.json()
+                return self._parse_transcription_response(json_data)
 
         except AiolaError:
             raise
@@ -207,14 +242,31 @@ class AsyncSttClient(_BaseStt):
         keywords: dict[str, str] | None = None,
         tasks_config: TasksConfig | None = None,
     ) -> AsyncStreamConnection:
-        """Create an async streaming connection for real-time transcription."""
+        """Create an async streaming connection for real-time transcription.
+
+        Args:
+            workflow_id: Workflow ID to use for this stream. If not provided, uses the client's
+                        workflow_id from initialization, or falls back to the default workflow.
+            execution_id: Unique execution ID. If not provided, a UUID will be generated.
+            lang_code: Language code for transcription (default: "en").
+            time_zone: Time zone for timestamps (default: "UTC").
+            keywords: Optional keywords dictionary for enhanced transcription.
+            tasks_config: Optional configuration for additional AI tasks.
+
+        Returns:
+            AsyncStreamConnection: A connection object for real-time async streaming.
+        """
         try:
             self._validate_stream_params(workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config)
-            # Get access token for streaming connection
+
+            # Resolve workflow_id with proper precedence
+            resolved_workflow_id = self._resolve_workflow_id(workflow_id)
+
+            # Get access token for streaming connection using resolved workflow_id
             access_token = await self._auth.get_access_token(
                 self._options.access_token or "",
                 self._options.api_key or "",
-                self._options.workflow_id,
+                resolved_workflow_id,
             )
 
             # Build query parameters and headers
@@ -266,13 +318,8 @@ class AsyncSttClient(_BaseStt):
                     files=files,
                     data=data,
                 )
-                data = response.json()
-                return TranscriptionResponse(
-                    transcript=data["transcript"],
-                    raw_transcript=data["raw_transcript"],
-                    segments=[Segment(**seg) for seg in data["segments"]],
-                    metadata=TranscriptionMetadata(**data["metadata"]),
-                )
+                json_data = response.json()
+                return self._parse_transcription_response(json_data)
 
         except AiolaError:
             raise
