@@ -66,7 +66,7 @@ class _BaseStt:
             "lang_code": lang_code or "en",
             "time_zone": time_zone or "UTC",
             "keywords": json.dumps(keywords or {}),
-            "tasks_config": json.dumps(tasks_config or None),
+            "tasks_config": json.dumps(tasks_config) if tasks_config is not None else None,
             "x-aiola-api-token": access_token,
         }
 
