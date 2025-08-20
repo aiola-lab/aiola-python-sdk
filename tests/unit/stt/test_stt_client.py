@@ -349,7 +349,7 @@ def test_stt_stream_with_no_tasks_config(patch_dummy_socket):
 
     tasks_config_json = query["tasks_config"][0]
     parsed_tasks_config = json.loads(tasks_config_json)
-    assert parsed_tasks_config == {}
+    assert parsed_tasks_config == None
 
 
 def test_stt_stream_with_all_tasks_config(patch_dummy_socket):
