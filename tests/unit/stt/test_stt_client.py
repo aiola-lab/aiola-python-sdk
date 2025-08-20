@@ -341,14 +341,14 @@ def test_stt_stream_with_no_tasks_config(patch_dummy_socket):
     # Access the underlying socket to validate connection parameters
     sio = connection._sio
 
-    # Verify None tasks_config is serialized as empty JSON object
+    # Verify None tasks_config is excluded from URL parameters
     kwargs = sio.connect_kwargs
     url = kwargs["url"]
     parsed = urllib.parse.urlparse(url)
     query = urllib.parse.parse_qs(parsed.query)
 
-    tasks_config = query["tasks_config"][0]
-    assert tasks_config == None
+    # tasks_config should not be present in query parameters when None
+    assert "tasks_config" not in query
 
 
 def test_stt_stream_with_all_tasks_config(patch_dummy_socket):
