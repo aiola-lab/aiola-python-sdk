@@ -34,7 +34,9 @@ class _BaseStt:
     def _build_url(self, query_params: dict[str, str]) -> str:
         """Return base URL with encoded query parameters."""
         try:
-            return f"{self._options.base_url}?{urlencode(query_params)}"
+            # Filter out None values from query parameters
+            filtered_params = {k: v for k, v in query_params.items() if v is not None}
+            return f"{self._options.base_url}?{urlencode(filtered_params)}"
         except Exception as exc:
             raise AiolaError("Failed to build streaming URL") from exc
 
@@ -66,7 +68,7 @@ class _BaseStt:
             "lang_code": lang_code or "en",
             "time_zone": time_zone or "UTC",
             "keywords": json.dumps(keywords or {}),
-            "tasks_config": json.dumps(tasks_config or {}),
+            "tasks_config": json.dumps(tasks_config) if tasks_config is not None else None,
             "x-aiola-api-token": access_token,
         }
 
