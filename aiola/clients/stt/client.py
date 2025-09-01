@@ -63,12 +63,16 @@ class _BaseStt:
         query = {
             "execution_id": execution_id,
             "flow_id": resolved_workflow_id,
-            "lang_code": lang_code or "en",
             "time_zone": time_zone or "UTC",
-            "keywords": json.dumps(keywords or {}),
-            "tasks_config": json.dumps(tasks_config or {}),
             "x-aiola-api-token": access_token,
         }
+
+        if lang_code is not None:
+            query["lang_code"] = lang_code
+        if keywords is not None:
+            query["keywords"] = json.dumps(keywords)
+        if tasks_config is not None:
+            query["tasks_config"] = json.dumps(tasks_config)
 
         headers = {
             "Authorization": f"Bearer {access_token}",
