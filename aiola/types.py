@@ -59,6 +59,7 @@ class LiveEvents(str, enum.Enum):
     Error = "error"
     Disconnect = "disconnect"
     Connect = "connect"
+    Structured = "structured"
 
 
 @dataclass
