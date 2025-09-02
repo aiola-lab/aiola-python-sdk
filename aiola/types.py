@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import IO, Union
+from typing import IO, Any, Union
 
 from .constants import DEFAULT_AUTH_BASE_URL, DEFAULT_BASE_URL, DEFAULT_HTTP_TIMEOUT, DEFAULT_WORKFLOW_ID
 
@@ -46,20 +46,10 @@ class AiolaClientOptions:
 class LiveEvents(str, enum.Enum):
     Transcript = "transcript"
     Translation = "translation"
-    SentimentAnalysis = "sentiment_analysis"
-    Summarization = "summarization"
-    TopicDetection = "topic_detection"
-    ContentModeration = "content_moderation"
-    AutoChapters = "auto_chapters"
-    FormFilling = "form_filling"
-    EntityDetection = "entity_detection"
-    EntityDetectionFromList = "entity_detection_from_list"
-    KeyPhrases = "key_phrases"
-    PiiRedaction = "pii_redaction"
+    Structured = "structured"
     Error = "error"
     Disconnect = "disconnect"
     Connect = "connect"
-    Structured = "structured"
 
 
 @dataclass
@@ -117,6 +107,13 @@ class TranscriptionResponse:
 
 
 @dataclass
+class StructuredResponse:
+    """Response from structured API."""
+
+    results: dict[str, Any]
+
+
+@dataclass
 class SessionCloseResponse:
     """Response from session close API."""
 
@@ -139,39 +136,8 @@ class TranslationPayload:
 
 
 @dataclass
-class EntityDetectionFromListPayload:
-    entity_list: list[str]
-
-
-@dataclass
-class _EmptyPayload:
-    pass
-
-
-EntityDetectionPayload = _EmptyPayload
-KeyPhrasesPayload = _EmptyPayload
-PiiRedactionPayload = _EmptyPayload
-SentimentAnalysisPayload = _EmptyPayload
-SummarizationPayload = _EmptyPayload
-TopicDetectionPayload = _EmptyPayload
-ContentModerationPayload = _EmptyPayload
-AutoChaptersPayload = _EmptyPayload
-FormFillingPayload = _EmptyPayload
-
-
-@dataclass
 class TasksConfig:
-    FORM_FILLING: FormFillingPayload | None = None
     TRANSLATION: TranslationPayload | None = None
-    ENTITY_DETECTION: EntityDetectionPayload | None = None
-    ENTITY_DETECTION_FROM_LIST: EntityDetectionFromListPayload | None = None
-    KEY_PHRASES: KeyPhrasesPayload | None = None
-    PII_REDACTION: PiiRedactionPayload | None = None
-    SENTIMENT_ANALYSIS: SentimentAnalysisPayload | None = None
-    SUMMARIZATION: SummarizationPayload | None = None
-    TOPIC_DETECTION: TopicDetectionPayload | None = None
-    CONTENT_MODERATION: ContentModerationPayload | None = None
-    AUTO_CHAPTERS: AutoChaptersPayload | None = None
 
 
 FileContent = Union[IO[bytes], bytes, str]
