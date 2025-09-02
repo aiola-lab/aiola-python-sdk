@@ -326,7 +326,7 @@ def test_stt_stream_with_empty_tasks_config(patch_dummy_socket):
 
 
 def test_stt_stream_with_no_tasks_config(patch_dummy_socket):
-    """``SttClient.stream`` handles None tasks_config properly."""
+    """``SttClient.stream`` handles None tasks_config properly by not including it in URL."""
 
     client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
 
@@ -341,15 +341,14 @@ def test_stt_stream_with_no_tasks_config(patch_dummy_socket):
     # Access the underlying socket to validate connection parameters
     sio = connection._sio
 
-    # Verify None tasks_config is serialized as empty JSON object
+    # Verify None tasks_config is not included in URL
     kwargs = sio.connect_kwargs
     url = kwargs["url"]
     parsed = urllib.parse.urlparse(url)
     query = urllib.parse.parse_qs(parsed.query)
 
-    tasks_config_json = query["tasks_config"][0]
-    parsed_tasks_config = json.loads(tasks_config_json)
-    assert parsed_tasks_config == {}
+    # tasks_config should not be present when None
+    assert "tasks_config" not in query
 
 
 def test_stt_stream_with_all_tasks_config(patch_dummy_socket):
