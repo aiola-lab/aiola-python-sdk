@@ -17,7 +17,7 @@ from ...errors import (
     AiolaValidationError,
 )
 from ...http_client import create_async_authenticated_client, create_authenticated_client
-from ...types import AiolaClientOptions, File, TasksConfig, TranscriptionResponse
+from ...types import AiolaClientOptions, File, TasksConfig, TranscriptionResponse, VadConfig
 from .stream_client import AsyncStreamConnection, StreamConnection
 
 if TYPE_CHECKING:
@@ -54,6 +54,7 @@ class _BaseStt:
         time_zone: str | None,
         keywords: dict[str, str] | None,
         tasks_config: TasksConfig | None,
+        vad_config: VadConfig | None,
         access_token: str,
     ) -> tuple[dict[str, str], dict[str, str]]:
         """Build query parameters and headers for streaming requests."""
@@ -73,6 +74,8 @@ class _BaseStt:
             query["keywords"] = json.dumps(keywords)
         if tasks_config is not None:
             query["tasks_config"] = json.dumps(tasks_config)
+        if vad_config is not None:
+            query["vad_config"] = json.dumps(vad_config)
 
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -88,6 +91,7 @@ class _BaseStt:
         time_zone: str | None,
         keywords: dict[str, str] | None,
         tasks_config: TasksConfig | None,
+        vad_config: VadConfig | None,
     ) -> None:
         """Validate streaming parameters."""
         if flow_id is not None and not isinstance(flow_id, str):
@@ -100,8 +104,10 @@ class _BaseStt:
             raise AiolaValidationError("time_zone must be a string")
         if keywords is not None and not isinstance(keywords, dict):
             raise AiolaValidationError("keywords must be a dictionary")
-        if tasks_config is not None and not isinstance(tasks_config, dict):
-            raise AiolaValidationError("tasks_config must be a dictionary")
+        if tasks_config is not None and not isinstance(tasks_config, dict | TasksConfig):
+            raise AiolaValidationError("tasks_config must be a dictionary or a TasksConfig object")
+        if vad_config is not None and not isinstance(vad_config, dict | VadConfig):
+            raise AiolaValidationError("vad_config must be a dictionary or a VadConfig object")
 
 
 class SttClient(_BaseStt):
@@ -119,6 +125,7 @@ class SttClient(_BaseStt):
         time_zone: str | None = None,
         keywords: dict[str, str] | None = None,
         tasks_config: TasksConfig | None = None,
+        vad_config: VadConfig | None = None,
     ) -> StreamConnection:
         """Create a streaming connection for real-time transcription.
 
@@ -135,7 +142,9 @@ class SttClient(_BaseStt):
             StreamConnection: A connection object for real-time streaming.
         """
         try:
-            self._validate_stream_params(workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config)
+            self._validate_stream_params(
+                workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config, vad_config
+            )
 
             # Resolve workflow_id with proper precedence
             resolved_workflow_id = self._resolve_workflow_id(workflow_id)
@@ -149,7 +158,7 @@ class SttClient(_BaseStt):
 
             # Build query parameters and headers
             query, headers = self._build_query_and_headers(
-                workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config, access_token
+                workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config, vad_config, access_token
             )
 
             url = self._build_url(query)
@@ -160,6 +169,7 @@ class SttClient(_BaseStt):
         except (AiolaError, AiolaValidationError):
             raise
         except Exception as exc:
+            print(exc)
             raise AiolaError("Failed to create streaming connection") from exc
 
     def transcribe_file(
@@ -229,6 +239,7 @@ class AsyncSttClient(_BaseStt):
         time_zone: str | None = None,
         keywords: dict[str, str] | None = None,
         tasks_config: TasksConfig | None = None,
+        vad_config: VadConfig | None = None,
     ) -> AsyncStreamConnection:
         """Create an async streaming connection for real-time transcription.
 
@@ -245,7 +256,9 @@ class AsyncSttClient(_BaseStt):
             AsyncStreamConnection: A connection object for real-time async streaming.
         """
         try:
-            self._validate_stream_params(workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config)
+            self._validate_stream_params(
+                workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config, vad_config
+            )
 
             # Resolve workflow_id with proper precedence
             resolved_workflow_id = self._resolve_workflow_id(workflow_id)
@@ -259,7 +272,7 @@ class AsyncSttClient(_BaseStt):
 
             # Build query parameters and headers
             query, headers = self._build_query_and_headers(
-                workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config, access_token
+                workflow_id, execution_id, lang_code, time_zone, keywords, tasks_config, vad_config, access_token
             )
 
             url = self._build_url(query)

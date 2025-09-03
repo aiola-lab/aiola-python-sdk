@@ -140,6 +140,14 @@ class TasksConfig:
     TRANSLATION: TranslationPayload | None = None
 
 
+@dataclass
+class VadConfig:
+    threshold: float | None = None
+    min_speech_ms: float | None = None
+    min_silence_ms: float | None = None
+    max_segment_ms: float | None = None
+
+
 FileContent = Union[IO[bytes], bytes, str]
 File = Union[
     # file (or bytes)
