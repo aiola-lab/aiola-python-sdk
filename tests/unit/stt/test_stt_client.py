@@ -6,7 +6,7 @@ import pytest
 import httpx
 
 from aiola import AiolaClient, AsyncAiolaClient, AiolaError
-from aiola.types import TasksConfig, LiveEvents, TranscriptionResponse
+from aiola.types import TasksConfig, LiveEvents, TranscriptionResponse, VadConfig
 from aiola.clients.stt.client import StreamConnection, AsyncStreamConnection
 
 from tests._helpers import (
@@ -102,6 +102,11 @@ def test_stt_transcribe_file_makes_expected_http_request(dummy_stt_http):
     parsed_keywords = json.loads(keywords_json)
     assert parsed_keywords == {}
 
+    # Verify empty VAD config JSON is sent
+    vad_config_json = recorded["data"]["vad_config"]
+    parsed_vad_config = json.loads(vad_config_json)
+    assert parsed_vad_config == {}
+
 
 def test_stt_transcribe_file_with_keywords(dummy_stt_http):
     """``SttClient.transcribe_file`` properly serializes keywords."""
@@ -134,6 +139,11 @@ def test_stt_transcribe_file_with_keywords(dummy_stt_http):
     parsed_keywords = json.loads(keywords_json)
     assert parsed_keywords["hello"] == "greeting"
     assert parsed_keywords["world"] == "place"
+
+    # Verify empty VAD config JSON is sent
+    vad_config_json = recorded["data"]["vad_config"]
+    parsed_vad_config = json.loads(vad_config_json)
+    assert parsed_vad_config == {}
 
 
 def test_stt_transcribe_file_with_default_parameters(dummy_stt_http):
@@ -246,6 +256,102 @@ def test_stt_transcribe_file_with_complex_keywords(dummy_stt_http):
     assert parsed_keywords["user@example.com"] == "email"
     assert parsed_keywords["123-456-7890"] == "phone"
     assert parsed_keywords["special!@#$%"] == "symbols"
+
+
+def test_stt_transcribe_file_with_vad_config_dict(dummy_stt_http):
+    """``SttClient.transcribe_file`` properly serializes vad_config as dictionary."""
+
+    client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
+
+    # Create a mock audio file
+    audio_file = BytesIO(b"fake audio data")
+
+    vad_config = {
+        "min_speech_ms": 100,
+        "min_silence_ms": 200,
+        "max_segment_ms": 1500,
+        "threshold": 0.5,
+    }
+
+    result = client.stt.transcribe_file(
+        file=audio_file,
+        language="en",
+        vad_config=vad_config,
+    )
+
+    # Check the response
+    assert result.transcript == "Hello, this is a test transcription."
+
+    # Check the HTTP request
+    assert len(dummy_stt_http.post_calls) == 1
+    recorded = dummy_stt_http.post_calls[0]
+    assert recorded["path"] == "/api/speech-to-text/file"
+    assert recorded["files"]["file"] == audio_file
+    assert recorded["data"]["language"] == "en"
+
+    # Verify VAD config was properly serialized
+    vad_config_json = recorded["data"]["vad_config"]
+    parsed_vad_config = json.loads(vad_config_json)
+    assert parsed_vad_config["min_speech_ms"] == 100
+    assert parsed_vad_config["min_silence_ms"] == 200
+    assert parsed_vad_config["max_segment_ms"] == 1500
+    assert parsed_vad_config["threshold"] == 0.5
+
+
+def test_stt_transcribe_file_with_empty_vad_config(dummy_stt_http):
+    """``SttClient.transcribe_file`` handles empty vad_config dict properly."""
+
+    client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
+
+    # Create a mock audio file
+    audio_file = BytesIO(b"fake audio data")
+
+    result = client.stt.transcribe_file(
+        file=audio_file,
+        language="fr",
+        vad_config={},
+    )
+
+    # Check the response
+    assert result.transcript == "Hello, this is a test transcription."
+
+    # Check the HTTP request
+    assert len(dummy_stt_http.post_calls) == 1
+    recorded = dummy_stt_http.post_calls[0]
+    assert recorded["data"]["language"] == "fr"
+
+    # Verify empty VAD config JSON
+    vad_config_json = recorded["data"]["vad_config"]
+    parsed_vad_config = json.loads(vad_config_json)
+    assert parsed_vad_config == {}
+
+
+def test_stt_transcribe_file_with_default_vad_config(dummy_stt_http):
+    """``SttClient.transcribe_file`` uses default empty dict when vad_config is not provided."""
+
+    client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
+
+    # Create a mock audio file
+    audio_file = BytesIO(b"fake audio data")
+
+    # Call without vad_config parameter
+    result = client.stt.transcribe_file(file=audio_file)
+
+    # Check the response
+    assert isinstance(result, TranscriptionResponse)
+    assert result.transcript == "Hello, this is a test transcription."
+
+    # Check the HTTP request uses defaults
+    assert len(dummy_stt_http.post_calls) == 1
+    recorded = dummy_stt_http.post_calls[0]
+    assert recorded["path"] == "/api/speech-to-text/file"
+    assert recorded["files"]["file"] == audio_file
+    assert recorded["data"]["language"] == "en"  # Default language
+
+    # Verify empty VAD config JSON is sent
+    vad_config_json = recorded["data"]["vad_config"]
+    parsed_vad_config = json.loads(vad_config_json)
+    assert parsed_vad_config == {}
 
 
 def test_stt_stream_with_tasks_config(patch_dummy_socket):
@@ -415,6 +521,103 @@ def test_stt_stream_with_all_tasks_config(patch_dummy_socket):
     assert "PII_REDACTION" in parsed_tasks_config
 
 
+def test_stt_stream_with_vad_config(patch_dummy_socket):
+    """``SttClient.stream`` properly serializes vad_config as JSON."""
+
+    client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
+
+    vad_config = {
+        "min_speech_ms": 100,
+        "min_silence_ms": 200,
+        "max_segment_ms": 1500,
+        "threshold": 0.5,
+    }
+
+    connection = client.stt.stream(
+        workflow_id="flow-123",
+        vad_config=vad_config
+    )
+
+    assert isinstance(connection, StreamConnection)
+    assert connection.connected is False
+
+    connection.connect()
+    assert connection.connected is True
+
+    # Access the underlying socket to validate connection parameters
+    sio = connection._sio
+    assert isinstance(sio, DummySocketClient)
+
+    # Validate vad_config is properly serialized in query parameters
+    kwargs = sio.connect_kwargs
+    url = kwargs["url"]
+    parsed = urllib.parse.urlparse(url)
+    query = urllib.parse.parse_qs(parsed.query)
+
+    # Extract and parse the vad_config from the URL
+    vad_config_json = query["vad_config"][0]
+    parsed_vad_config = json.loads(vad_config_json)
+
+    # Verify the vad_config was properly serialized
+    assert parsed_vad_config["min_speech_ms"] == 100
+    assert parsed_vad_config["min_silence_ms"] == 200
+    assert parsed_vad_config["max_segment_ms"] == 1500
+    assert parsed_vad_config["threshold"] == 0.5
+
+
+def test_stt_stream_with_empty_vad_config(patch_dummy_socket):
+    """``SttClient.stream`` handles empty vad_config properly."""
+
+    client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
+
+    connection = client.stt.stream(workflow_id="flow-123", vad_config={})
+
+    assert isinstance(connection, StreamConnection)
+    assert connection.connected is False
+
+    connection.connect()
+    assert connection.connected is True
+
+    # Access the underlying socket to validate connection parameters
+    sio = connection._sio
+
+    # Verify empty vad_config is serialized as empty JSON object
+    kwargs = sio.connect_kwargs
+    url = kwargs["url"]
+    parsed = urllib.parse.urlparse(url)
+    query = urllib.parse.parse_qs(parsed.query)
+
+    vad_config_json = query["vad_config"][0]
+    parsed_vad_config = json.loads(vad_config_json)
+    assert parsed_vad_config == {}
+
+
+def test_stt_stream_with_no_vad_config(patch_dummy_socket):
+    """``SttClient.stream`` handles None vad_config properly by not including it in URL."""
+
+    client = AiolaClient(api_key="secret-key", base_url="https://speech.example")
+
+    connection = client.stt.stream(workflow_id="flow-123", vad_config=None)
+
+    assert isinstance(connection, StreamConnection)
+    assert connection.connected is False
+
+    connection.connect()
+    assert connection.connected is True
+
+    # Access the underlying socket to validate connection parameters
+    sio = connection._sio
+
+    # Verify None vad_config is not included in URL
+    kwargs = sio.connect_kwargs
+    url = kwargs["url"]
+    parsed = urllib.parse.urlparse(url)
+    query = urllib.parse.parse_qs(parsed.query)
+
+    # vad_config should not be present when None
+    assert "vad_config" not in query
+
+
 def test_stream_connection_wrapper_functionality(patch_dummy_socket):
     """Test that StreamConnection wrapper provides the expected API."""
 
@@ -550,6 +753,48 @@ async def test_async_stt_stream_with_tasks_config(patch_dummy_async_socket):
 
 
 @pytest.mark.anyio
+async def test_async_stt_stream_with_vad_config(patch_dummy_async_socket):
+    """Async version properly handles vad_config."""
+
+    client = AsyncAiolaClient(api_key="tok", base_url="https://speech.example")
+
+    vad_config = {
+        "min_speech_ms": 100,
+        "min_silence_ms": 200,
+        "max_segment_ms": 1500,
+        "threshold": 0.5,
+    }
+
+    connection = await client.stt.stream(
+        workflow_id="f1",
+        vad_config=vad_config
+    )
+
+    assert isinstance(connection, AsyncStreamConnection)
+    assert connection.connected is False
+
+    await connection.connect()
+    assert connection.connected is True
+
+    # Access the underlying socket to validate connection parameters
+    sio = connection._sio
+
+    # Verify vad_config is properly serialized
+    kwargs = sio.connect_kwargs
+    url = kwargs["url"]
+    parsed = urllib.parse.urlparse(url)
+    query = urllib.parse.parse_qs(parsed.query)
+
+    vad_config_json = query["vad_config"][0]
+    parsed_vad_config = json.loads(vad_config_json)
+
+    assert parsed_vad_config["min_speech_ms"] == 100
+    assert parsed_vad_config["min_silence_ms"] == 200
+    assert parsed_vad_config["max_segment_ms"] == 1500
+    assert parsed_vad_config["threshold"] == 0.5
+
+
+@pytest.mark.anyio
 async def test_async_stt_transcribe_file_makes_expected_http_request(dummy_async_stt_http):
     """``AsyncSttClient.transcribe_file`` should send POST /api/speech-to-text/file with file."""
 
@@ -584,6 +829,11 @@ async def test_async_stt_transcribe_file_makes_expected_http_request(dummy_async
     keywords_json = recorded["data"]["keywords"]
     parsed_keywords = json.loads(keywords_json)
     assert parsed_keywords == {}
+
+    # Verify empty VAD config JSON is sent
+    vad_config_json = recorded["data"]["vad_config"]
+    parsed_vad_config = json.loads(vad_config_json)
+    assert parsed_vad_config == {}
 
 
 @pytest.mark.anyio
@@ -647,6 +897,53 @@ async def test_async_stt_transcribe_file_with_default_parameters(dummy_async_stt
     keywords_json = recorded["data"]["keywords"]
     parsed_keywords = json.loads(keywords_json)
     assert parsed_keywords == {}
+
+    # Verify empty VAD config JSON is sent
+    vad_config_json = recorded["data"]["vad_config"]
+    parsed_vad_config = json.loads(vad_config_json)
+    assert parsed_vad_config == {}
+
+
+@pytest.mark.anyio
+async def test_async_stt_transcribe_file_with_vad_config(dummy_async_stt_http):
+    """``AsyncSttClient.transcribe_file`` properly serializes vad_config."""
+
+    client = AsyncAiolaClient(api_key="secret-key", base_url="https://speech.example")
+
+    # Create a mock audio file
+    audio_file = BytesIO(b"fake audio data")
+
+    vad_config = {
+        "min_speech_ms": 100,
+        "min_silence_ms": 200,
+        "max_segment_ms": 1500,
+        "threshold": 0.5,
+    }
+
+    result = await client.stt.transcribe_file(
+        file=audio_file,
+        language="en",
+        vad_config=vad_config,
+    )
+
+    # Check the response
+    assert isinstance(result, TranscriptionResponse)
+    assert result.transcript == "Hello, this is a test transcription."
+
+    # Check the HTTP request
+    assert len(dummy_async_stt_http.post_calls) == 1
+    recorded = dummy_async_stt_http.post_calls[0]
+    assert recorded["path"] == "/api/speech-to-text/file"
+    assert recorded["files"]["file"] == audio_file
+    assert recorded["data"]["language"] == "en"
+
+    # Verify VAD config was properly serialized
+    vad_config_json = recorded["data"]["vad_config"]
+    parsed_vad_config = json.loads(vad_config_json)
+    assert parsed_vad_config["min_speech_ms"] == 100
+    assert parsed_vad_config["min_silence_ms"] == 200
+    assert parsed_vad_config["max_segment_ms"] == 1500
+    assert parsed_vad_config["threshold"] == 0.5
 
 
 @pytest.mark.anyio
