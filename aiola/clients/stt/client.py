@@ -178,6 +178,7 @@ class SttClient(_BaseStt):
         *,
         language: str | None = None,
         keywords: dict[str, str] | None = None,
+        vad_config: VadConfig | None = None,
     ) -> TranscriptionResponse:
         """Transcribe an audio file and return the transcription result."""
 
@@ -190,12 +191,16 @@ class SttClient(_BaseStt):
         if keywords is not None and not isinstance(keywords, dict):
             raise AiolaValidationError("keywords must be a dictionary")
 
+        if vad_config is not None and not isinstance(vad_config, dict | VadConfig):
+            raise AiolaValidationError("vad_config must be a dictionary or a VadConfig object")
+
         try:
             # Prepare the form data
             files = {"file": file}
             data = {
                 "language": language or "en",
                 "keywords": json.dumps(keywords or {}),
+                "vad_config": json.dumps(vad_config or {}),
             }
 
             # Create authenticated HTTP client and make request
@@ -291,6 +296,7 @@ class AsyncSttClient(_BaseStt):
         *,
         language: str | None = None,
         keywords: dict[str, str] | None = None,
+        vad_config: VadConfig | None = None,
     ) -> TranscriptionResponse:
         """Transcribe an audio file and return the transcription result."""
 
@@ -303,12 +309,16 @@ class AsyncSttClient(_BaseStt):
         if keywords is not None and not isinstance(keywords, dict):
             raise AiolaValidationError("keywords must be a dictionary")
 
+        if vad_config is not None and not isinstance(vad_config, dict | VadConfig):
+            raise AiolaValidationError("vad_config must be a dictionary or a VadConfig object")
+
         try:
             # Prepare the form data
             files = {"file": file}
             data = {
                 "language": language or "en",
                 "keywords": json.dumps(keywords or {}),
+                "vad_config": json.dumps(vad_config or {}),
             }
 
             # Create authenticated HTTP client and make request
