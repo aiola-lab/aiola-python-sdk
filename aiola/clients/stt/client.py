@@ -169,7 +169,6 @@ class SttClient(_BaseStt):
         except (AiolaError, AiolaValidationError):
             raise
         except Exception as exc:
-            print(exc)
             raise AiolaError("Failed to create streaming connection") from exc
 
     def transcribe_file(
