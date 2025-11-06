@@ -14,21 +14,21 @@ def test_tts_stream_makes_expected_http_request(dummy_http):
     """``TtsClient.stream`` should send POST /synthesize/stream and yield audio chunks."""
 
     client = AiolaClient(api_key="k", base_url="https://tts.example")
-    chunks = list(client.tts.stream(text="Hello", voice="voiceA"))
+    chunks = list(client.tts.stream(text="Hello", persona="en_american_male"))
 
     assert chunks == [b"chunk1", b"chunk2"]
 
     recorded = dummy_http.stream_calls.pop()
     assert recorded["method"] == "POST"
     assert recorded["path"] == "/api/tts/stream"
-    assert recorded["json"] == {"text": "Hello", "voice": "voiceA", "language": None}
+    assert recorded["json"] == {"text": "Hello", "persona": "en_american_male"}
 
 
 def test_tts_synthesize_makes_expected_http_request(dummy_http):
     """``TtsClient.synthesize`` must hit POST /synthesize (non-stream variant)."""
 
     client = AiolaClient(api_key="k")
-    list(client.tts.synthesize(text="Hi", voice="B"))  # exhaust generator
+    list(client.tts.synthesize(text="Hi", persona="de_female"))  # exhaust generator
 
     recorded = dummy_http.stream_calls.pop()
     assert recorded["path"] == "/api/tts/synthesize"
@@ -44,7 +44,7 @@ async def test_async_tts_stream(dummy_async_http):
     """``AsyncTtsClient.stream`` should work similarly using awaitables."""
 
     client = AsyncAiolaClient(api_key="k")
-    chunks = [c async for c in client.tts.stream(text="Async", voice="v")]  # exhaust
+    chunks = [c async for c in client.tts.stream(text="Async", persona="en_british_female")]  # exhaust
 
     assert chunks == [b"chunk1", b"chunk2"]
 
@@ -57,7 +57,7 @@ async def test_async_tts_synthesize(dummy_async_http):
     """``AsyncTtsClient.synthesize`` POSTs to /synthesize endpoint."""
 
     client = AsyncAiolaClient(api_key="k")
-    _ = [c async for c in client.tts.synthesize(text="Async", voice="v")]
+    _ = [c async for c in client.tts.synthesize(text="Async", persona="de_female")]
 
     recorded = dummy_async_http.stream_calls.pop()
     assert recorded["path"] == "/api/tts/synthesize"
@@ -95,7 +95,7 @@ def test_tts_stream_propagates_http_errors(monkeypatch):
 
     # Now wrapped in AiolaError instead of raw RuntimeError
     with pytest.raises(AiolaError, match="TTS streaming failed"):
-        list(client.tts.stream(text="x", voice="v"))
+        list(client.tts.stream(text="x", persona="en_american_male"))
 
 
 @pytest.mark.anyio
@@ -129,5 +129,5 @@ async def test_async_tts_propagates_http_errors(monkeypatch):
 
     # Now wrapped in AiolaError instead of raw RuntimeError
     with pytest.raises(AiolaError, match="Async TTS streaming failed"):
-        async for _ in client.tts.stream(text="fail", voice="v"):
+        async for _ in client.tts.stream(text="fail", persona="en_american_male"):
             pass
