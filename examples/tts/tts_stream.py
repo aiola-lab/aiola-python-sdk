@@ -16,7 +16,7 @@ def stream_tts():
         # Step 3: Stream audio
         stream = client.tts.stream(
             text='Hello, how can I help you today?',
-            persona='en_american_male'
+            voice_id='en_us_male'
         )
 
         audio_chunks = []

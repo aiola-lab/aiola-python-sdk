@@ -17,7 +17,7 @@ async def create_audio_file():
         # Step 3: Generate audio
         audio = client.tts.synthesize(
             text='Hello, how can I help you today?',
-            persona='en_american_male'
+            voice_id='en_us_male'
         )
 
         file_path = os.path.join(os.path.dirname(__file__), "async_audio.wav")
@@ -47,7 +47,7 @@ async def stream_tts():
         # Step 3: Stream audio
         stream = client.tts.stream(
             text='Hello, how can I help you today?',
-            persona='en_american_male'
+            voice_id='en_us_male'
         )
 
         audio_chunks = []

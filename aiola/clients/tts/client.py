@@ -22,12 +22,12 @@ class BaseTts:
     def _make_headers() -> dict[str, str]:
         return {"Accept": "audio/*"}
 
-    def _validate_tts_params(self, text: str, persona: str) -> None:
+    def _validate_tts_params(self, text: str, voice_id: str) -> None:
         """Validate TTS parameters."""
         if not text or not isinstance(text, str):
             raise AiolaValidationError("text must be a non-empty string")
-        if not persona or not isinstance(persona, str):
-            raise AiolaValidationError("persona must be a non-empty string")
+        if not voice_id or not isinstance(voice_id, str):
+            raise AiolaValidationError("voice_id must be a non-empty string")
 
 
 class TtsClient(BaseTts):
@@ -37,9 +37,9 @@ class TtsClient(BaseTts):
         super().__init__(options, auth)
         self._auth: AuthClient = auth  # Type narrowing
 
-    def stream(self, *, text: str, persona: str) -> Iterator[bytes]:
+    def stream(self, *, text: str, voice_id: str) -> Iterator[bytes]:
         """Stream synthesized audio in real-time."""
-        self._validate_tts_params(text, persona)
+        self._validate_tts_params(text, voice_id)
 
         try:
             # Create authenticated HTTP client and make the streaming request
@@ -50,7 +50,7 @@ class TtsClient(BaseTts):
                     "/api/tts/stream",
                     json={
                         "text": text,
-                        "persona": persona,
+                        "voice_id": voice_id,
                     },
                     headers=self._make_headers(),
                 ) as response,
@@ -72,9 +72,9 @@ class TtsClient(BaseTts):
         except Exception as exc:
             raise AiolaError(f"TTS streaming failed: {str(exc)}") from exc
 
-    def synthesize(self, *, text: str, persona: str) -> Iterator[bytes]:
+    def synthesize(self, *, text: str, voice_id: str) -> Iterator[bytes]:
         """Synthesize audio and return as iterator of bytes."""
-        self._validate_tts_params(text, persona)
+        self._validate_tts_params(text, voice_id)
 
         try:
             # Create authenticated HTTP client and make the streaming request
@@ -85,7 +85,7 @@ class TtsClient(BaseTts):
                     "/api/tts/synthesize",
                     json={
                         "text": text,
-                        "persona": persona,
+                        "voice_id": voice_id,
                     },
                     headers=self._make_headers(),
                 ) as response,
@@ -115,9 +115,9 @@ class AsyncTtsClient(BaseTts):
         super().__init__(options, auth)
         self._auth: AsyncAuthClient = auth  # Type narrowing
 
-    async def stream(self, *, text: str, persona: str) -> AsyncIterator[bytes]:
+    async def stream(self, *, text: str, voice_id: str) -> AsyncIterator[bytes]:
         """Stream synthesized audio in real-time (async)."""
-        self._validate_tts_params(text, persona)
+        self._validate_tts_params(text, voice_id)
 
         try:
             # Create authenticated HTTP client and make the streaming request
@@ -129,7 +129,7 @@ class AsyncTtsClient(BaseTts):
                     "/api/tts/stream",
                     json={
                         "text": text,
-                        "persona": persona,
+                        "voice_id": voice_id,
                     },
                     headers=self._make_headers(),
                 ) as response,
@@ -152,9 +152,9 @@ class AsyncTtsClient(BaseTts):
         except Exception as exc:
             raise AiolaError(f"Async TTS streaming failed: {str(exc)}") from exc
 
-    async def synthesize(self, *, text: str, persona: str) -> AsyncIterator[bytes]:
+    async def synthesize(self, *, text: str, voice_id: str) -> AsyncIterator[bytes]:
         """Synthesize audio and return as async iterator of bytes."""
-        self._validate_tts_params(text, persona)
+        self._validate_tts_params(text, voice_id)
 
         try:
             # Create authenticated HTTP client and make the streaming request
@@ -166,7 +166,7 @@ class AsyncTtsClient(BaseTts):
                     "/api/tts/synthesize",
                     json={
                         "text": text,
-                        "persona": persona,
+                        "voice_id": voice_id,
                     },
                     headers=self._make_headers(),
                 ) as response,

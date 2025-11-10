@@ -230,7 +230,7 @@ def create_file():
 
         audio = client.tts.synthesize(
             text='Hello, how can I help you today?',
-            persona='en_american_male'
+            voice_id='en_us_male'
         )
 
         with open('./audio.wav', 'wb') as f:
@@ -262,7 +262,7 @@ def stream_tts():
 
         stream = client.tts.stream(
             text='Hello, how can I help you today?',
-            persona='en_american_male'
+            voice_id='en_us_male'
         )
 
         audio_chunks = []
@@ -328,7 +328,7 @@ async def create_audio_file():
 
         audio = client.tts.synthesize(
             text='Hello, how can I help you today?',
-            persona='en_american_male'
+            voice_id='en_us_male'
         )
 
         with open('./audio.wav', 'wb') as f:
@@ -362,7 +362,7 @@ async def stream_tts():
 
         stream = client.tts.stream(
             text='Hello, how can I help you today?',
-            persona='en_american_male'
+            voice_id='en_us_male'
         )
 
         audio_chunks = []
