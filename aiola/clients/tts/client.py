@@ -55,7 +55,12 @@ class TtsClient(BaseTts):
                     headers=self._make_headers(),
                 ) as response,
             ):
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError:
+                    response.read()
+                    raise
+
                 yield from response.iter_bytes()
 
         except AiolaError:
@@ -90,7 +95,12 @@ class TtsClient(BaseTts):
                     headers=self._make_headers(),
                 ) as response,
             ):
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError:
+                    response.read()
+                    raise
+
                 yield from response.iter_bytes()
 
         except AiolaError:
@@ -134,7 +144,12 @@ class AsyncTtsClient(BaseTts):
                     headers=self._make_headers(),
                 ) as response,
             ):
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError:
+                    response.read()
+                    raise
+
                 async for chunk in response.aiter_bytes():
                     yield chunk
 
@@ -171,7 +186,12 @@ class AsyncTtsClient(BaseTts):
                     headers=self._make_headers(),
                 ) as response,
             ):
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError:
+                    response.read()
+                    raise
+
                 async for chunk in response.aiter_bytes():
                     yield chunk
 
