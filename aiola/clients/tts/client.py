@@ -147,7 +147,7 @@ class AsyncTtsClient(BaseTts):
                 try:
                     response.raise_for_status()
                 except httpx.HTTPStatusError:
-                    response.read()
+                    await response.aread()
                     raise
 
                 async for chunk in response.aiter_bytes():
@@ -189,7 +189,7 @@ class AsyncTtsClient(BaseTts):
                 try:
                     response.raise_for_status()
                 except httpx.HTTPStatusError:
-                    response.read()
+                    await response.aread()
                     raise
 
                 async for chunk in response.aiter_bytes():
