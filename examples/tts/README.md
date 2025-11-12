@@ -21,8 +21,7 @@ def synthesize_to_file():
         # Step 3: Synthesize audio to a file
         audio_stream = client.tts.synthesize(
             text="Hello, how can I help you today?",
-            voice="jess",
-            language="en"
+            voice_id="en_us_male"
         )
 
         # Step 4: Save to file
@@ -67,8 +66,7 @@ def main():
     def synthesize_to_file():
         audio_stream = client.tts.synthesize(
             text="Hello, how can I help you today?",
-            voice="jess",
-            language="en"
+            voice_id="en_us_male"
         )
 
         # Save to file
@@ -83,8 +81,7 @@ def main():
     def stream_tts():
         stream = client.tts.stream(
             text="Hello, this is a streaming example of text-to-speech synthesis.",
-            voice="jess",
-            language="en"
+            voice_id="en_us_male"
         )
 
         # Collect audio chunks
@@ -122,7 +119,7 @@ async def async_tts_example():
     result = await AsyncAiolaClient.grant_token(api_key=os.getenv("AIOLA_API_KEY"))
     client = AsyncAiolaClient(access_token=result.access_token)
 
-    response = await client.tts.synthesize(text="Hello world", voice="jess", language="en")
+    response = await client.tts.synthesize(text="Hello world", voice_id="en_us_male")
 
     async for chunk in response:
         # Process audio chunk

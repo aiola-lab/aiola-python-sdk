@@ -16,12 +16,14 @@ class AiolaError(Exception):
         self,
         message: str,
         *,
+        reason: str | None = None,
         status: int | None = None,
         code: str | None = None,
         details: Any | None = None,
     ) -> None:
         super().__init__(message)
         self.message: str = message  # Keep an explicit attribute – ``Exception`` drops it under ``__str__``
+        self.reason: str | None = reason
         self.status: int | None = status
         self.code: str | None = code
         self.details: Any | None = details
@@ -38,27 +40,29 @@ class AiolaError(Exception):
         """
 
         message: str = f"Request failed with status {response.status_code}"
+        reason: str | None = None
         code: str | None = None
         details: Any | None = None
 
         try:
             payload = response.json()
             if isinstance(payload, dict):
-                err_payload = payload.get("error", payload)
-                if isinstance(err_payload, dict):
-                    message = err_payload.get("message", message)
-                    code = err_payload.get("code")
-                    details = err_payload.get("details", err_payload)
+                reason = payload.get("message")
+                code = payload.get("code")
+                details = payload.get("details", payload)
         except ValueError:
             # Not JSON – try plain text
-            text = response.text
-            if text:
-                message = text
+            reason = response.text
 
-        return cls(message, status=response.status_code, code=code, details=details)
+        return cls(message, reason=reason, status=response.status_code, code=code, details=details)
 
     def __str__(self) -> str:
-        return self.message
+        parts = [self.message]
+        
+        if self.reason is not None:
+            parts.append(f"Reason: {self.reason}")
+        
+        return " | ".join(parts)
 
 
 class AiolaConnectionError(AiolaError):

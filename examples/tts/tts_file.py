@@ -16,8 +16,7 @@ def create_file():
         # Step 3: Generate audio
         audio = client.tts.synthesize(
             text='Hello, how can I help you today?',
-            voice='jess',
-            language='en'
+            voice_id='en_us_male'
         )
 
         output_path = os.path.join(os.path.dirname(__file__), "output_audio.wav")
