@@ -40,6 +40,7 @@ class AiolaError(Exception):
         """
 
         message: str = f"Request failed with status {response.status_code}"
+        reason: str | None = None
         code: str | None = None
         details: Any | None = None
 
