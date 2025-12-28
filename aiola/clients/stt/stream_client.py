@@ -3,6 +3,7 @@ from typing import Any
 
 import socketio
 
+from ...constants import DEFAULT_SOCKET_TIMEOUT
 from ...errors import AiolaError, AiolaStreamingError, AiolaValidationError
 from ...types import AiolaClientOptions, LiveEvents
 
@@ -27,6 +28,7 @@ class StreamConnection:
             reconnection=True,
             reconnection_attempts=3,
             reconnection_delay=1,
+            request_timeout=DEFAULT_SOCKET_TIMEOUT,
         )
 
     def connect(self) -> None:
@@ -132,6 +134,7 @@ class AsyncStreamConnection:
             reconnection=True,
             reconnection_attempts=3,
             reconnection_delay=1,
+            request_timeout=DEFAULT_SOCKET_TIMEOUT,
         )
 
     async def connect(self) -> None:
