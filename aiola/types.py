@@ -11,10 +11,10 @@ from .constants import DEFAULT_AUTH_BASE_URL, DEFAULT_BASE_URL, DEFAULT_HTTP_TIM
 @dataclass
 class AiolaClientOptions:
     """Configuration options for Aiola clients.
-    
+
     Contains all configuration parameters needed to initialize and configure
     an Aiola client. Either api_key or access_token must be provided.
-    
+
     Attributes:
         base_url: API base URL. Defaults to production Aiola API endpoint.
         auth_base_url: Authentication service base URL. Defaults to production
@@ -25,14 +25,14 @@ class AiolaClientOptions:
             or api_key must be provided.
         workflow_id: Workflow ID defining the AI processing pipeline. Defaults
             to the standard workflow.
-        timeout: HTTP request timeout in seconds. Defaults to 30 seconds.
+        timeout: HTTP request timeout in seconds. Defaults to 150 seconds.
     """
 
     base_url: str | None = DEFAULT_BASE_URL
     auth_base_url: str | None = DEFAULT_AUTH_BASE_URL
     api_key: str | None = None
     access_token: str | None = None
-    workflow_id: str = DEFAULT_WORKFLOW_ID
+    workflow_id: str | None = DEFAULT_WORKFLOW_ID
     timeout: float | None = DEFAULT_HTTP_TIMEOUT
 
     def __post_init__(self) -> None:
@@ -61,10 +61,10 @@ class AiolaClientOptions:
 
 class LiveEvents(str, enum.Enum):
     """Events that can be received during live audio streaming.
-    
+
     These events provide real-time feedback and results from the streaming
     transcription service.
-    
+
     Attributes:
         Transcript: Real-time transcription results emitted for each detected
             speech segment.
@@ -75,6 +75,7 @@ class LiveEvents(str, enum.Enum):
         Disconnect: Connection closed event.
         Connect: Connection established event.
     """
+
     Transcript = "transcript"
     Translation = "translation"
     Structured = "structured"
@@ -85,9 +86,9 @@ class LiveEvents(str, enum.Enum):
 
 class VoiceId(str, enum.Enum):
     """Supported voice identifiers for text-to-speech synthesis.
-    
+
     Use these enum values for type safety and autocomplete when specifying voices.
-    
+
     Attributes:
         EnglishUSFemale: English (US) - Female voice ('en_us_female')
         EnglishUSMale: English (US) - Male voice ('en_us_male')
@@ -101,7 +102,7 @@ class VoiceId(str, enum.Enum):
         JapaneseMale: Japanese - Male voice ('ja_male')
         PortugueseFemale: Portuguese - Female voice ('pt_female')
         PortugueseMale: Portuguese - Male voice ('pt_male')
-    
+
     Examples:
         >>> from aiola import AiolaClient, VoiceId
         >>> client = AiolaClient(access_token='your-token')
@@ -110,6 +111,7 @@ class VoiceId(str, enum.Enum):
         ...     voice_id=VoiceId.EnglishUSFemale
         ... )
     """
+
     EnglishUSFemale = "en_us_female"
     EnglishUSMale = "en_us_male"
     SpanishFemale = "es_female"
@@ -127,13 +129,14 @@ class VoiceId(str, enum.Enum):
 @dataclass
 class Segment:
     """Time segment representing a portion of audio.
-    
+
     Indicates where speech was detected in the audio file.
-    
+
     Attributes:
         start: Start time of the segment in seconds.
         end: End time of the segment in seconds.
     """
+
     start: float
     end: float
 
@@ -141,9 +144,9 @@ class Segment:
 @dataclass
 class TranscriptionMetadata:
     """Metadata about the transcribed audio file and transcription process.
-    
+
     Contains information about the audio file characteristics and transcription results.
-    
+
     Attributes:
         file_duration: Total duration of the audio file in seconds.
         language: Detected or specified language code (e.g., 'en', 'es', 'fr').
@@ -176,10 +179,10 @@ class TranscriptionMetadata:
 @dataclass
 class TranscriptionResponse:
     """Response from the file transcription API.
-    
+
     Contains the complete transcription results including processed text,
     time segments, and metadata.
-    
+
     Attributes:
         transcript: The complete transcription text with formatting and punctuation.
             This is the processed, production-ready transcript.
@@ -215,7 +218,7 @@ class TranscriptionResponse:
 @dataclass
 class StructuredResponse:
     """Response from structured data extraction API.
-    
+
     Attributes:
         results: Dictionary containing extracted structured data. The structure
             depends on the form/schema configuration used.
@@ -227,7 +230,7 @@ class StructuredResponse:
 @dataclass
 class SessionCloseResponse:
     """Response from the session close API.
-    
+
     Attributes:
         status: Status of the session closure operation.
         deleted_at: ISO 8601 timestamp when the session was deleted.
@@ -240,7 +243,7 @@ class SessionCloseResponse:
 @dataclass
 class GrantTokenResponse:
     """Response from the access token generation API.
-    
+
     Attributes:
         access_token: JWT access token for API authentication. This token has
             an expiration time and should be validated before use.
@@ -255,11 +258,12 @@ class GrantTokenResponse:
 @dataclass
 class TranslationPayload:
     """Configuration for translation task.
-    
+
     Attributes:
         src_lang_code: Source language code (e.g., 'en', 'es', 'fr').
         dst_lang_code: Destination language code (e.g., 'es', 'fr', 'de').
     """
+
     src_lang_code: str
     dst_lang_code: str
 
@@ -267,14 +271,14 @@ class TranslationPayload:
 @dataclass
 class TasksConfig:
     """Configuration for AI tasks to run during transcription.
-    
+
     Specify which AI-powered analysis tasks should be applied to the audio.
     Each task can have its own configuration payload.
-    
+
     Attributes:
         TRANSLATION: Optional translation configuration. If provided, translates
             transcribed text from source to destination language.
-    
+
     Examples:
         >>> config = TasksConfig(
         ...     TRANSLATION=TranslationPayload(
@@ -283,16 +287,17 @@ class TasksConfig:
         ...     )
         ... )
     """
+
     TRANSLATION: TranslationPayload | None = None
 
 
 @dataclass
 class VadConfig:
     """Voice Activity Detection (VAD) configuration.
-    
+
     Controls how the system detects speech and silence in audio streams,
     affecting when transcription events are emitted and how audio is segmented.
-    
+
     Attributes:
         threshold: Probability threshold for speech detection (0.0 to 1.0).
             Higher values make detection more conservative (less likely to
@@ -306,7 +311,7 @@ class VadConfig:
         max_segment_ms: Maximum duration of a speech segment in milliseconds.
             Prevents extremely long segments. Default is typically 30000ms
             (30 seconds).
-    
+
     Examples:
         >>> # More conservative detection with longer segments
         >>> vad = VadConfig(
@@ -316,6 +321,7 @@ class VadConfig:
         ...     max_segment_ms=15000
         ... )
     """
+
     threshold: float | None = None
     min_speech_ms: float | None = None
     min_silence_ms: float | None = None

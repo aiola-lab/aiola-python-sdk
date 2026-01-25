@@ -421,7 +421,7 @@ Closes a session on the server and frees up concurrency slots.
 
 #### Constructor
 
-##### `AiolaClient(api_key=None, access_token=None, base_url=None, auth_base_url=None, workflow_id=None, timeout=30)`
+##### `AiolaClient(api_key=None, access_token=None, base_url=None, auth_base_url=None, workflow_id=None, timeout=150)`
 
 Creates a new AiolaClient instance. Either `api_key` or `access_token` must be provided.
 
@@ -431,7 +431,7 @@ Creates a new AiolaClient instance. Either `api_key` or `access_token` must be p
 - `base_url` (str, optional): Custom API base URL
 - `auth_base_url` (str, optional): Custom authentication base URL
 - `workflow_id` (str, optional): Custom workflow ID
-- `timeout` (int, optional): HTTP request timeout in seconds (default: 30)
+- `timeout` (float, optional): HTTP request timeout in seconds (default: 150)
 
 #### Properties
 
