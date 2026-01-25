@@ -9,7 +9,31 @@ from .types import AiolaClientOptions, GrantTokenResponse, SessionCloseResponse
 
 
 class AiolaClient:
-    """Aiola SDK."""
+    """Main client for interacting with the Aiola API (synchronous).
+    
+    Provides access to Speech-to-Text (STT), Text-to-Speech (TTS), and authentication services.
+    The client uses lazy initialization for service clients, creating them only when first accessed.
+    
+    You can initialize the client with either an API key (for automatic token management) or
+    a pre-generated access token.
+    
+    Examples:
+        Using API key (recommended for backend services):
+        >>> client = AiolaClient(api_key='your-api-key')
+        >>> transcription = client.stt.transcribe_file('audio.wav')
+        
+        Using access token:
+        >>> token_response = AiolaClient.grant_token(api_key='your-api-key')
+        >>> client = AiolaClient(access_token=token_response.access_token)
+        >>> transcription = client.stt.transcribe_file('audio.wav')
+        
+        Custom configuration:
+        >>> client = AiolaClient(
+        ...     api_key='your-api-key',
+        ...     base_url='https://custom-api.aiola.com',
+        ...     timeout=60
+        ... )
+    """
 
     def __init__(
         self,
@@ -21,6 +45,43 @@ class AiolaClient:
         workflow_id: str = DEFAULT_WORKFLOW_ID,
         timeout: int = DEFAULT_HTTP_TIMEOUT,
     ):
+        """Initialize the Aiola client.
+        
+        Either api_key or access_token must be provided. If both are provided,
+        access_token takes precedence.
+        
+        Args:
+            api_key: Your Aiola API key. If provided, the client will automatically
+                manage access tokens.
+            access_token: A pre-generated access token from grant_token(). Use this
+                for more control over token lifecycle.
+            base_url: Optional custom API base URL. Defaults to production endpoint.
+            auth_base_url: Optional custom authentication base URL. Defaults to
+                production authentication endpoint.
+            workflow_id: Optional custom workflow ID. Workflows define the AI
+                processing pipeline. Defaults to the standard workflow.
+            timeout: HTTP request timeout in seconds. Defaults to 30 seconds.
+        
+        Raises:
+            AiolaValidationError: If neither api_key nor access_token is provided,
+                or if parameters are invalid.
+            AiolaError: If client initialization fails.
+        
+        Examples:
+            >>> # Using API key
+            >>> client = AiolaClient(api_key='your-api-key')
+            
+            >>> # Using access token
+            >>> token = AiolaClient.grant_token('your-api-key')
+            >>> client = AiolaClient(access_token=token.access_token)
+            
+            >>> # With custom configuration
+            >>> client = AiolaClient(
+            ...     api_key='your-api-key',
+            ...     base_url='https://custom.aiola.com',
+            ...     timeout=60
+            ... )
+        """
         # Initialize lazy-loaded clients
         self._stt: SttClient | None = None
         self._tts: TtsClient | None = None
@@ -42,10 +103,36 @@ class AiolaClient:
 
     @property
     def options(self) -> AiolaClientOptions:
+        """Get the client configuration options.
+        
+        Returns the resolved configuration including default values for any
+        options that were not explicitly provided during construction.
+        
+        Returns:
+            AiolaClientOptions: The client configuration.
+        """
         return self._options
 
     @property
     def stt(self) -> SttClient:
+        """Get the Speech-to-Text (STT) client.
+        
+        Provides access to transcription services including file transcription
+        and real-time streaming. The client is lazily initialized on first access.
+        
+        Returns:
+            SttClient: The STT client instance.
+        
+        Raises:
+            AiolaError: If STT client initialization fails.
+        
+        Examples:
+            >>> # Transcribe a file
+            >>> result = client.stt.transcribe_file('audio.wav', language='en')
+            
+            >>> # Start a streaming session
+            >>> stream = client.stt.stream(lang_code='en')
+        """
         if self._stt is None:
             try:
                 self._stt = SttClient(self._options, self.auth)
@@ -55,6 +142,24 @@ class AiolaClient:
 
     @property
     def tts(self) -> TtsClient:
+        """Get the Text-to-Speech (TTS) client.
+        
+        Provides access to speech synthesis services. The client is lazily
+        initialized on first access.
+        
+        Returns:
+            TtsClient: The TTS client instance.
+        
+        Raises:
+            AiolaError: If TTS client initialization fails.
+        
+        Examples:
+            >>> # Synthesize text to speech
+            >>> audio_data = client.tts.synthesize(
+            ...     text='Hello world',
+            ...     voice_id='en-US-JennyNeural'
+            ... )
+        """
         if self._tts is None:
             try:
                 self._tts = TtsClient(self._options, self.auth)
@@ -64,6 +169,17 @@ class AiolaClient:
 
     @property
     def auth(self) -> AuthClient:
+        """Get the authentication client.
+        
+        Used internally for token management and validation. The client is lazily
+        initialized on first access. Most users will not need to access this directly.
+        
+        Returns:
+            AuthClient: The authentication client instance.
+        
+        Raises:
+            AiolaError: If Auth client initialization fails.
+        """
         if self._auth is None:
             try:
                 self._auth = AuthClient(options=self._options)
@@ -118,7 +234,34 @@ class AiolaClient:
 
 
 class AsyncAiolaClient:
-    """Asynchronous Aiola SDK."""
+    """Main client for interacting with the Aiola API (asynchronous).
+    
+    Provides async/await access to Speech-to-Text (STT), Text-to-Speech (TTS), and
+    authentication services. Use this client in async applications for better
+    performance and concurrency.
+    
+    The client uses lazy initialization for service clients, creating them only when
+    first accessed.
+    
+    You can initialize the client with either an API key (for automatic token management)
+    or a pre-generated access token.
+    
+    Examples:
+        Using API key (recommended for backend services):
+        >>> client = AsyncAiolaClient(api_key='your-api-key')
+        >>> transcription = await client.stt.transcribe_file('audio.wav')
+        
+        Using access token:
+        >>> token_response = await AsyncAiolaClient.grant_token(api_key='your-api-key')
+        >>> client = AsyncAiolaClient(access_token=token_response.access_token)
+        >>> transcription = await client.stt.transcribe_file('audio.wav')
+        
+        Custom configuration:
+        >>> client = AsyncAiolaClient(
+        ...     api_key='your-api-key',
+        ...     base_url='https://custom-api.aiola.com'
+        ... )
+    """
 
     def __init__(
         self,
@@ -129,6 +272,41 @@ class AsyncAiolaClient:
         auth_base_url: str | None = None,
         workflow_id: str = DEFAULT_WORKFLOW_ID,
     ):
+        """Initialize the async Aiola client.
+        
+        Either api_key or access_token must be provided. If both are provided,
+        access_token takes precedence.
+        
+        Args:
+            api_key: Your Aiola API key. If provided, the client will automatically
+                manage access tokens.
+            access_token: A pre-generated access token from grant_token(). Use this
+                for more control over token lifecycle.
+            base_url: Optional custom API base URL. Defaults to production endpoint.
+            auth_base_url: Optional custom authentication base URL. Defaults to
+                production authentication endpoint.
+            workflow_id: Optional custom workflow ID. Workflows define the AI
+                processing pipeline. Defaults to the standard workflow.
+        
+        Raises:
+            AiolaValidationError: If neither api_key nor access_token is provided,
+                or if parameters are invalid.
+            AiolaError: If client initialization fails.
+        
+        Examples:
+            >>> # Using API key
+            >>> client = AsyncAiolaClient(api_key='your-api-key')
+            
+            >>> # Using access token
+            >>> token = await AsyncAiolaClient.grant_token('your-api-key')
+            >>> client = AsyncAiolaClient(access_token=token.access_token)
+            
+            >>> # With custom configuration
+            >>> client = AsyncAiolaClient(
+            ...     api_key='your-api-key',
+            ...     base_url='https://custom.aiola.com'
+            ... )
+        """
         # Initialize lazy-loaded clients
         self._stt: AsyncSttClient | None = None
         self._tts: AsyncTtsClient | None = None
@@ -149,10 +327,36 @@ class AsyncAiolaClient:
 
     @property
     def options(self) -> AiolaClientOptions:
+        """Get the client configuration options.
+        
+        Returns the resolved configuration including default values for any
+        options that were not explicitly provided during construction.
+        
+        Returns:
+            AiolaClientOptions: The client configuration.
+        """
         return self._options
 
     @property
     def stt(self) -> AsyncSttClient:
+        """Get the Speech-to-Text (STT) client.
+        
+        Provides async access to transcription services including file transcription
+        and real-time streaming. The client is lazily initialized on first access.
+        
+        Returns:
+            AsyncSttClient: The async STT client instance.
+        
+        Raises:
+            AiolaError: If STT client initialization fails.
+        
+        Examples:
+            >>> # Transcribe a file
+            >>> result = await client.stt.transcribe_file('audio.wav', language='en')
+            
+            >>> # Start a streaming session
+            >>> stream = await client.stt.stream(lang_code='en')
+        """
         if self._stt is None:
             try:
                 self._stt = AsyncSttClient(self._options, self.auth)
@@ -162,6 +366,26 @@ class AsyncAiolaClient:
 
     @property
     def tts(self) -> AsyncTtsClient:
+        """Get the Text-to-Speech (TTS) client.
+        
+        Provides async access to speech synthesis services. The client is lazily
+        initialized on first access.
+        
+        Returns:
+            AsyncTtsClient: The async TTS client instance.
+        
+        Raises:
+            AiolaError: If TTS client initialization fails.
+        
+        Examples:
+            >>> # Synthesize text to speech
+            >>> async for chunk in client.tts.synthesize(
+            ...     text='Hello world',
+            ...     voice_id='en-US-JennyNeural'
+            ... ):
+            ...     # Process audio chunk
+            ...     pass
+        """
         if self._tts is None:
             try:
                 self._tts = AsyncTtsClient(self._options, self.auth)
@@ -171,6 +395,17 @@ class AsyncAiolaClient:
 
     @property
     def auth(self) -> AsyncAuthClient:
+        """Get the authentication client.
+        
+        Used internally for token management and validation. The client is lazily
+        initialized on first access. Most users will not need to access this directly.
+        
+        Returns:
+            AsyncAuthClient: The async authentication client instance.
+        
+        Raises:
+            AiolaError: If Auth client initialization fails.
+        """
         if self._auth is None:
             try:
                 self._auth = AsyncAuthClient(options=self._options)

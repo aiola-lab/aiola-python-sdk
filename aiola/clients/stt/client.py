@@ -111,7 +111,11 @@ class _BaseStt:
 
 
 class SttClient(_BaseStt):
-    """STT client."""
+    """Speech-to-Text (STT) client for audio transcription services.
+    
+    Provides both file-based transcription and real-time streaming capabilities.
+    Supports multiple audio formats and various AI-powered tasks.
+    """
 
     def __init__(self, options: AiolaClientOptions, auth: AuthClient) -> None:
         super().__init__(options, auth)
@@ -127,19 +131,50 @@ class SttClient(_BaseStt):
         tasks_config: TasksConfig | None = None,
         vad_config: VadConfig | None = None,
     ) -> StreamConnection:
-        """Create a streaming connection for real-time transcription.
+        """Create a real-time streaming connection for audio transcription.
+        
+        Returns a connection object that can be used to send audio data and receive
+        transcription events in real-time. Audio should be sent as 16-bit PCM at
+        16kHz sample rate, mono channel.
 
         Args:
-            workflow_id: Workflow ID to use for this stream. If not provided, uses the client's
-                        workflow_id from initialization, or falls back to the default workflow.
-            execution_id: Unique execution ID. If not provided, a UUID will be generated.
-            lang_code: Language code for transcription (default: "en").
-            time_zone: Time zone for timestamps (default: "UTC").
-            keywords: Optional keywords dictionary for enhanced transcription.
-            tasks_config: Optional configuration for additional AI tasks.
+            workflow_id: Optional workflow ID. If not provided, uses the client's
+                workflow_id from initialization, or falls back to the default workflow.
+                Workflows define the AI processing pipeline.
+            execution_id: Optional execution ID for tracking this session. If not
+                provided, a UUID will be automatically generated. Useful for
+                correlating logs and events.
+            lang_code: Optional language code for transcription (e.g., 'en', 'es', 'fr').
+                If not specified, the service will attempt to auto-detect.
+            time_zone: Optional timezone for timestamps in events. Defaults to 'UTC'.
+                Use IANA timezone format (e.g., 'America/New_York', 'Europe/London').
+            keywords: Optional dictionary mapping spoken phrases to written forms
+                for boosting recognition accuracy. Format: {'spoken': 'written'}.
+            tasks_config: Optional AI tasks configuration. Specify which AI-powered
+                analysis tasks should run (e.g., translation, sentiment analysis).
+            vad_config: Optional Voice Activity Detection configuration. Controls
+                how speech segments are detected and when events are emitted.
 
         Returns:
             StreamConnection: A connection object for real-time streaming.
+        
+        Raises:
+            AiolaValidationError: If parameters are invalid.
+            AiolaError: If connection creation fails.
+        
+        Examples:
+            >>> # Basic streaming
+            >>> stream = client.stt.stream(lang_code='en')
+            >>> stream.on('transcript', lambda data: print(data['transcript']))
+            >>> stream.connect()
+            >>> stream.send(audio_data)
+            
+            >>> # With keywords and VAD config
+            >>> stream = client.stt.stream(
+            ...     lang_code='en',
+            ...     keywords={'aiola': 'Aiola', 'AI': 'AI'},
+            ...     vad_config={'min_speech_ms': 300, 'min_silence_ms': 700}
+            ... )
         """
         try:
             self._validate_stream_params(
@@ -179,7 +214,55 @@ class SttClient(_BaseStt):
         keywords: dict[str, str] | None = None,
         vad_config: VadConfig | None = None,
     ) -> TranscriptionResponse:
-        """Transcribe an audio file and return the transcription result."""
+        """Transcribe an audio file to text.
+        
+        Uploads and processes an audio file on the server, returning the complete
+        transcription once processing is finished. Supports multiple audio formats
+        including WAV, MP3, M4A, OGG, and FLAC.
+
+        Args:
+            file: Audio file to transcribe. Can be a file path (str), file object,
+                or bytes. Supported formats: WAV, MP3, M4A, OGG, FLAC.
+            language: Optional language code (e.g., 'en', 'es', 'fr'). If not
+                specified, the service will attempt to auto-detect the language.
+            keywords: Optional dictionary mapping spoken phrases to written forms
+                for boosting recognition accuracy. Format: {'spoken': 'written'}.
+            vad_config: Optional Voice Activity Detection configuration. Controls
+                how speech segments are detected in the audio.
+
+        Returns:
+            TranscriptionResponse: Complete transcription result including:
+                - transcript: The processed transcription text
+                - raw_transcript: Unprocessed transcription
+                - segments: Time segments where speech was detected
+                - metadata: File metadata and transcription information
+
+        Raises:
+            AiolaFileError: If file parameter is missing or invalid.
+            AiolaValidationError: If parameters are invalid.
+            AiolaAuthenticationError: If authentication fails (401).
+            AiolaServerError: If server error occurs (500+).
+            AiolaConnectionError: If network error occurs.
+            AiolaError: For other transcription errors.
+
+        Examples:
+            >>> # Transcribe from file path
+            >>> result = client.stt.transcribe_file('audio.wav', language='en')
+            >>> print(result.transcript)
+            
+            >>> # Transcribe with keywords
+            >>> result = client.stt.transcribe_file(
+            ...     'audio.wav',
+            ...     language='en',
+            ...     keywords={'aiola': 'Aiola', 'API': 'API'}
+            ... )
+            
+            >>> # Transcribe with VAD config
+            >>> result = client.stt.transcribe_file(
+            ...     'audio.wav',
+            ...     vad_config={'min_speech_ms': 300, 'threshold': 0.6}
+            ... )
+        """
 
         if file is None:
             raise AiolaFileError("File parameter is required")
@@ -229,7 +312,11 @@ class SttClient(_BaseStt):
 
 
 class AsyncSttClient(_BaseStt):
-    """Asynchronous STT client."""
+    """Asynchronous Speech-to-Text (STT) client for audio transcription.
+    
+    Provides async/await access to file-based transcription and real-time streaming.
+    Use this client in async applications for better performance and concurrency.
+    """
 
     def __init__(self, options: AiolaClientOptions, auth: AsyncAuthClient) -> None:
         super().__init__(options, auth)
@@ -245,19 +332,41 @@ class AsyncSttClient(_BaseStt):
         tasks_config: TasksConfig | None = None,
         vad_config: VadConfig | None = None,
     ) -> AsyncStreamConnection:
-        """Create an async streaming connection for real-time transcription.
+        """Create a real-time async streaming connection for audio transcription.
+        
+        Returns a connection object that can be used to send audio data and receive
+        transcription events in real-time using async/await. Audio should be sent as
+        16-bit PCM at 16kHz sample rate, mono channel.
 
         Args:
-            workflow_id: Workflow ID to use for this stream. If not provided, uses the client's
-                        workflow_id from initialization, or falls back to the default workflow.
-            execution_id: Unique execution ID. If not provided, a UUID will be generated.
-            lang_code: Language code for transcription (default: "en").
-            time_zone: Time zone for timestamps (default: "UTC").
-            keywords: Optional keywords dictionary for enhanced transcription.
-            tasks_config: Optional configuration for additional AI tasks.
+            workflow_id: Optional workflow ID. If not provided, uses the client's
+                workflow_id from initialization, or falls back to the default workflow.
+            execution_id: Optional execution ID for tracking. Auto-generated if not provided.
+            lang_code: Optional language code (e.g., 'en', 'es', 'fr').
+            time_zone: Optional timezone for timestamps (default: 'UTC').
+            keywords: Optional keywords dictionary for boosting recognition.
+            tasks_config: Optional AI tasks configuration.
+            vad_config: Optional Voice Activity Detection configuration.
 
         Returns:
-            AsyncStreamConnection: A connection object for real-time async streaming.
+            AsyncStreamConnection: An async connection object for real-time streaming.
+
+        Raises:
+            AiolaValidationError: If parameters are invalid.
+            AiolaError: If connection creation fails.
+
+        Examples:
+            >>> # Basic async streaming
+            >>> stream = await client.stt.stream(lang_code='en')
+            >>> stream.on('transcript', lambda data: print(data['transcript']))
+            >>> await stream.connect()
+            >>> await stream.send(audio_data)
+            
+            >>> # With AI tasks
+            >>> stream = await client.stt.stream(
+            ...     lang_code='en',
+            ...     tasks_config={'TRANSLATION': {'src_lang_code': 'en', 'dst_lang_code': 'es'}}
+            ... )
         """
         try:
             self._validate_stream_params(
@@ -297,7 +406,42 @@ class AsyncSttClient(_BaseStt):
         keywords: dict[str, str] | None = None,
         vad_config: VadConfig | None = None,
     ) -> TranscriptionResponse:
-        """Transcribe an audio file and return the transcription result."""
+        """Asynchronously transcribe an audio file to text.
+        
+        Uploads and processes an audio file on the server, returning the complete
+        transcription once processing is finished. Supports multiple audio formats.
+
+        Args:
+            file: Audio file to transcribe. Can be a file path, file object, or bytes.
+                Supported formats: WAV, MP3, M4A, OGG, FLAC.
+            language: Optional language code (e.g., 'en', 'es', 'fr').
+            keywords: Optional keywords dictionary for boosting recognition.
+            vad_config: Optional Voice Activity Detection configuration.
+
+        Returns:
+            TranscriptionResponse: Complete transcription result with text, segments,
+                and metadata.
+
+        Raises:
+            AiolaFileError: If file parameter is missing or invalid.
+            AiolaValidationError: If parameters are invalid.
+            AiolaAuthenticationError: If authentication fails.
+            AiolaServerError: If server error occurs.
+            AiolaConnectionError: If network error occurs.
+            AiolaError: For other transcription errors.
+
+        Examples:
+            >>> # Async transcription
+            >>> result = await client.stt.transcribe_file('audio.wav', language='en')
+            >>> print(result.transcript)
+            
+            >>> # With keywords
+            >>> result = await client.stt.transcribe_file(
+            ...     'audio.wav',
+            ...     language='en',
+            ...     keywords={'company': 'CompanyName'}
+            ... )
+        """
 
         if file is None:
             raise AiolaFileError("File parameter is required")
