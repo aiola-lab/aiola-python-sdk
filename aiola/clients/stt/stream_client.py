@@ -9,7 +9,33 @@ from ...types import AiolaClientOptions, LiveEvents
 
 
 class StreamConnection:
-    """Stream connection for the STT client."""
+    """Real-time audio streaming connection for transcription.
+    
+    Manages a Socket.IO connection for bidirectional communication with the Aiola
+    streaming service. Handles automatic reconnection and provides event-based
+    communication for real-time transcription.
+    
+    Audio must be sent as 16-bit PCM format at 16kHz sample rate, mono channel.
+    
+    Examples:
+        >>> # Create and use a streaming connection
+        >>> stream = client.stt.stream(lang_code='en')
+        >>> 
+        >>> # Register event handlers
+        >>> @stream.on(LiveEvents.Transcript)
+        >>> def on_transcript(data):
+        >>>     print(f"Transcript: {data['transcript']}")
+        >>> 
+        >>> # Or using direct registration
+        >>> stream.on(LiveEvents.Connect, lambda: print("Connected"))
+        >>> 
+        >>> # Connect and start streaming
+        >>> stream.connect()
+        >>> stream.send(audio_data)
+        >>> 
+        >>> # Clean up
+        >>> stream.disconnect()
+    """
 
     def __init__(
         self,
@@ -32,7 +58,21 @@ class StreamConnection:
         )
 
     def connect(self) -> None:
-        """Establish the socket connection using stored parameters."""
+        """Establish the Socket.IO connection to the streaming service.
+        
+        Creates a WebSocket connection for real-time audio streaming. The connection
+        automatically uses the URL, headers, and parameters configured during
+        initialization. Supports automatic reconnection up to 3 attempts.
+        
+        If already connected, this method returns without creating a new connection.
+        
+        Raises:
+            AiolaStreamingError: If connection fails.
+        
+        Examples:
+            >>> stream.on(LiveEvents.Connect, lambda: print("Connected!"))
+            >>> stream.connect()
+        """
         if self._sio.connected:
             return  # Already connected
 
@@ -75,7 +115,28 @@ class StreamConnection:
             raise AiolaStreamingError(f"Failed to register event handler for '{event}'") from exc
 
     def send(self, data: bytes) -> None:
-        """Send binary audio data."""
+        """Send audio data to the streaming service.
+        
+        Audio must be in 16-bit PCM format at 16kHz sample rate, mono channel.
+        Send audio in chunks as it becomes available (typically 100-1000ms chunks).
+        
+        Args:
+            data: Audio data in bytes (16-bit PCM, 16kHz, mono).
+        
+        Raises:
+            AiolaError: If connection is not established.
+            AiolaValidationError: If data is not bytes.
+            AiolaStreamingError: If sending data fails.
+        
+        Examples:
+            >>> # Send audio chunk
+            >>> stream.send(audio_bytes)
+            
+            >>> # Stream from microphone
+            >>> while recording:
+            >>>     chunk = microphone.read()
+            >>>     stream.send(chunk)
+        """
         if not self.connected:
             raise AiolaError("Connection not established")
 
@@ -88,7 +149,26 @@ class StreamConnection:
             raise AiolaStreamingError("Failed to send audio data") from exc
 
     def set_keywords(self, keywords: dict[str, str]) -> None:
-        """Send keywords list to the server."""
+        """Set or update keywords for recognition boosting.
+        
+        Keywords are used to improve recognition accuracy for specific terms or phrases.
+        The dictionary maps spoken phrases to their written forms.
+        
+        Args:
+            keywords: Dictionary mapping spoken phrases to written forms.
+                Example: {'eye ola': 'Aiola', 'open AI': 'OpenAI'}
+        
+        Raises:
+            AiolaValidationError: If keywords is not a dict or values are not strings.
+            AiolaStreamingError: If sending keywords fails.
+        
+        Examples:
+            >>> stream.set_keywords({
+            >>>     'aiola': 'Aiola',
+            >>>     'API': 'API',
+            >>>     'docker': 'Docker'
+            >>> })
+        """
         if not isinstance(keywords, dict):
             raise AiolaValidationError("Keywords must be a dict")
 
@@ -101,7 +181,18 @@ class StreamConnection:
             raise AiolaStreamingError("Failed to send keywords") from exc
 
     def disconnect(self) -> None:
-        """Disconnect the socket connection."""
+        """Close the Socket.IO connection to the streaming service.
+        
+        Gracefully terminates the connection. Always disconnect when finished to
+        free up server resources. If not connected, this method returns without error.
+        
+        Raises:
+            AiolaStreamingError: If disconnection fails.
+        
+        Examples:
+            >>> stream.disconnect()
+            >>> print("Disconnected from streaming service")
+        """
         if self._sio.connected:
             try:
                 self._sio.disconnect()
@@ -115,7 +206,30 @@ class StreamConnection:
 
 
 class AsyncStreamConnection:
-    """Async stream connection for the STT client."""
+    """Asynchronous real-time audio streaming connection for transcription.
+    
+    Manages an async Socket.IO connection for bidirectional communication with the
+    Aiola streaming service. Use this in async applications for better performance
+    and concurrency.
+    
+    Audio must be sent as 16-bit PCM format at 16kHz sample rate, mono channel.
+    
+    Examples:
+        >>> # Create and use an async streaming connection
+        >>> stream = await client.stt.stream(lang_code='en')
+        >>> 
+        >>> # Register event handlers
+        >>> @stream.on(LiveEvents.Transcript)
+        >>> def on_transcript(data):
+        >>>     print(f"Transcript: {data['transcript']}")
+        >>> 
+        >>> # Connect and start streaming
+        >>> await stream.connect()
+        >>> await stream.send(audio_data)
+        >>> 
+        >>> # Clean up
+        >>> await stream.disconnect()
+    """
 
     def __init__(
         self,
@@ -138,7 +252,18 @@ class AsyncStreamConnection:
         )
 
     async def connect(self) -> None:
-        """Establish the socket connection using stored parameters."""
+        """Asynchronously establish the Socket.IO connection.
+        
+        Creates a WebSocket connection for real-time audio streaming using async/await.
+        Supports automatic reconnection up to 3 attempts.
+        
+        Raises:
+            AiolaStreamingError: If connection fails.
+        
+        Examples:
+            >>> stream.on(LiveEvents.Connect, lambda: print("Connected!"))
+            >>> await stream.connect()
+        """
         if self._sio.connected:
             return  # Already connected
 
@@ -155,7 +280,31 @@ class AsyncStreamConnection:
             raise AiolaStreamingError("Failed to connect to Streaming service") from exc
 
     def on(self, event: LiveEvents, handler: Callable[..., Any] | None = None) -> Callable[..., Any]:
-        """Register an event handler."""
+        """Register an event handler for async streaming events.
+        
+        Can be used as a decorator or called directly. Handlers can be regular
+        functions or async functions.
+        
+        Args:
+            event: The event to listen for (from LiveEvents enum).
+            handler: Optional event handler function.
+        
+        Returns:
+            The registered handler function (or decorator if handler is None).
+        
+        Raises:
+            AiolaValidationError: If event or handler is invalid.
+            AiolaStreamingError: If registration fails.
+        
+        Examples:
+            >>> # Decorator usage
+            >>> @stream.on(LiveEvents.Transcript)
+            >>> async def handle_transcript(data):
+            >>>     await process_transcript(data['transcript'])
+            
+            >>> # Direct usage
+            >>> stream.on(LiveEvents.Connect, lambda: print("Connected"))
+        """
         if not isinstance(event, LiveEvents) or not event:
             raise AiolaValidationError("Event name must be a non-empty string")
 
@@ -181,7 +330,21 @@ class AsyncStreamConnection:
             raise AiolaStreamingError(f"Failed to register event handler for '{event}'") from exc
 
     async def send(self, data: bytes) -> None:
-        """Send binary audio data."""
+        """Asynchronously send audio data to the streaming service.
+        
+        Audio must be in 16-bit PCM format at 16kHz sample rate, mono channel.
+        
+        Args:
+            data: Audio data in bytes (16-bit PCM, 16kHz, mono).
+        
+        Raises:
+            AiolaError: If connection is not established.
+            AiolaValidationError: If data is not bytes.
+            AiolaStreamingError: If sending data fails.
+        
+        Examples:
+            >>> await stream.send(audio_bytes)
+        """
         if not self.connected:
             raise AiolaError("Connection not established")
 
@@ -194,7 +357,18 @@ class AsyncStreamConnection:
             raise AiolaStreamingError("Failed to send audio data") from exc
 
     async def set_keywords(self, keywords: dict[str, str]) -> None:
-        """Send keywords list to the server."""
+        """Asynchronously set or update keywords for recognition boosting.
+        
+        Args:
+            keywords: Dictionary mapping spoken phrases to written forms.
+        
+        Raises:
+            AiolaValidationError: If keywords format is invalid.
+            AiolaStreamingError: If sending keywords fails.
+        
+        Examples:
+            >>> await stream.set_keywords({'aiola': 'Aiola', 'API': 'API'})
+        """
         if not isinstance(keywords, dict):
             raise AiolaValidationError("Keywords must be a dict")
 
@@ -207,7 +381,16 @@ class AsyncStreamConnection:
             raise AiolaStreamingError("Failed to send keywords") from exc
 
     async def disconnect(self) -> None:
-        """Disconnect the socket connection."""
+        """Asynchronously close the Socket.IO connection.
+        
+        Gracefully terminates the connection using async/await.
+        
+        Raises:
+            AiolaStreamingError: If disconnection fails.
+        
+        Examples:
+            >>> await stream.disconnect()
+        """
         if self._sio.connected:
             try:
                 await self._sio.disconnect()
